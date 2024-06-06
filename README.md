@@ -2,10 +2,10 @@ Simple implementation of listp interpreter in Go
 
 ### Features
 
-- Choose a Subset of Lisp: We'll start with basic arithmetic operations, conditionals, and function definitions.
-- Parse Input: Implement a parser to read and tokenize Lisp expressions.
-- Evaluate Expressions: Write an evaluator that recursively processes expressions, handling atoms, function calls, and special forms.
-- Define Built-in Functions: Implement functions like addition, subtraction, and conditionals.
+- Subset of Lisp: basic arithmetic operations, conditionals, and function definitions.
+- Parse Input: A parser to read and tokenize Lisp expressions.
+- Evaluate Expressions: An evaluator that recursively processes expressions, handling atoms, function calls, and special forms.
+- Define Built-in Functions: Functions like addition, subtraction, multiplication, division and conditionals.
 - Support User-Defined Functions: Allow users to define their own functions using defun.
 - Create a REPL: Build a Read-Eval-Print Loop (REPL) for interactive use.
 
