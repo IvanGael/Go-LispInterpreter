@@ -45,3 +45,9 @@ greater
 7
 
 ````
+
+
+### Testing
+````
+go test -v
+````
