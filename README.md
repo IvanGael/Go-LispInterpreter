@@ -1,4 +1,4 @@
-Simple implementation of listp interpreter in Go
+Simple implementation of lisp interpreter in Go
 
 ### Features
 
