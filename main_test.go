@@ -210,6 +210,7 @@ func TestBuiltinEq(t *testing.T) {
 	}
 }
 
+// TestBuiltinDefun tests the builtinDefun function
 func TestBuiltinDefun(t *testing.T) {
 	env := make(Environment)
 
@@ -262,6 +263,7 @@ func TestBuiltinDefun(t *testing.T) {
 	}
 }
 
+// TestBuiltinLambda tests the builtinLambda function
 func TestBuiltinLambda(t *testing.T) {
 	env := Environment{}
 

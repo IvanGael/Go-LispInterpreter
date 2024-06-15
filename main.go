@@ -210,6 +210,18 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 			return builtinOr(env, args)
 		case "not":
 			return builtinNot(env, args)
+		case "list":
+			return builtinList(args)
+		case "car":
+			return builtinCar(env, args)
+		case "cdr":
+			return builtinCdr(env, args)
+		case "cons":
+			return builtinCons(env, args)
+		case "length":
+			return builtinLength(env, args)
+		case "append":
+			return builtinAppend(env, args)
 		default:
 			return callFunction(env, fn.Value, args)
 		}
@@ -220,6 +232,7 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 
 // Built-in function implementations
 
+// builtinAdd is built-in implementation of addition operation
 func builtinAdd(env Environment, args []LispValue) (LispValue, error) {
 	sum := 0
 	for _, arg := range args {
@@ -236,6 +249,7 @@ func builtinAdd(env Environment, args []LispValue) (LispValue, error) {
 	return &LispNumber{Value: sum}, nil
 }
 
+// builtinSub is built-in implementation of subtraction operation
 func builtinSub(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("wrong number of arguments to -")
@@ -263,6 +277,7 @@ func builtinSub(env Environment, args []LispValue) (LispValue, error) {
 	return &LispNumber{Value: diff}, nil
 }
 
+// builtinMul is built-in implementation of multiplication operation
 func builtinMul(env Environment, args []LispValue) (LispValue, error) {
 	prod := 1
 	for _, arg := range args {
@@ -279,6 +294,7 @@ func builtinMul(env Environment, args []LispValue) (LispValue, error) {
 	return &LispNumber{Value: prod}, nil
 }
 
+// builtinDiv is built-in implementation of division operation
 func builtinDiv(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("wrong number of arguments to /")
@@ -316,6 +332,7 @@ func builtinDiv(env Environment, args []LispValue) (LispValue, error) {
 	return &LispNumber{Value: quot}, nil
 }
 
+// builtinLt is built-in implementation of less than condition
 func builtinLt(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to <")
@@ -342,6 +359,7 @@ func builtinLt(env Environment, args []LispValue) (LispValue, error) {
 	return &LispAtom{Value: "false"}, nil
 }
 
+// builtinGt is built-in implementation of greater than condition
 func builtinGt(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to >")
@@ -368,6 +386,7 @@ func builtinGt(env Environment, args []LispValue) (LispValue, error) {
 	return &LispAtom{Value: "false"}, nil
 }
 
+// builtinEq is built-in implementation of equal to condition
 func builtinEq(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to =")
@@ -394,6 +413,7 @@ func builtinEq(env Environment, args []LispValue) (LispValue, error) {
 	return &LispAtom{Value: "false"}, nil
 }
 
+// builtinIf is built-in implementation of if conditional struct
 func builtinIf(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 3 {
 		return nil, fmt.Errorf("wrong number of arguments to if")
@@ -408,6 +428,7 @@ func builtinIf(env Environment, args []LispValue) (LispValue, error) {
 	return Eval(env, args[2])
 }
 
+// builtinDefun is built-in implementation of function definition
 func builtinDefun(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 3 {
 		return nil, fmt.Errorf("wrong number of arguments to defun")
@@ -425,6 +446,7 @@ func builtinDefun(env Environment, args []LispValue) (LispValue, error) {
 	return fn, nil
 }
 
+// builtinLambda is built-in implementation of lambda function definition
 func builtinLambda(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to lambda")
@@ -436,6 +458,7 @@ func builtinLambda(env Environment, args []LispValue) (LispValue, error) {
 	return &LispFunction{Params: params.Elements, Body: args[1], Env: env}, nil
 }
 
+// builtinLet is built-in implementation of let local variable definition
 func builtinLet(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to let")
@@ -466,6 +489,7 @@ func builtinLet(env Environment, args []LispValue) (LispValue, error) {
 	return Eval(localEnv, args[1])
 }
 
+// builtinAnd is built-in implementation of and logical operation
 func builtinAnd(env Environment, args []LispValue) (LispValue, error) {
 	for _, arg := range args {
 		val, err := Eval(env, arg)
@@ -479,6 +503,7 @@ func builtinAnd(env Environment, args []LispValue) (LispValue, error) {
 	return &LispAtom{Value: "true"}, nil
 }
 
+// builtinOr is built-in implementation of or logical operation
 func builtinOr(env Environment, args []LispValue) (LispValue, error) {
 	for _, arg := range args {
 		val, err := Eval(env, arg)
@@ -492,6 +517,7 @@ func builtinOr(env Environment, args []LispValue) (LispValue, error) {
 	return &LispAtom{Value: "false"}, nil
 }
 
+// builtinNot is built-in implementation of not logical operation
 func builtinNot(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("wrong number of arguments to not")
@@ -504,6 +530,102 @@ func builtinNot(env Environment, args []LispValue) (LispValue, error) {
 		return &LispAtom{Value: "true"}, nil
 	}
 	return &LispAtom{Value: "false"}, nil
+}
+
+// builtinList is built-in implementation of list definition
+func builtinList(args []LispValue) (LispValue, error) {
+	return &LispList{Elements: args}, nil
+}
+
+// builtinCar is built-in implementation of car list operation. It retrieves first element of a list.
+func builtinCar(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("wrong number of arguments to car")
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	list, ok := val.(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to car: %v", val)
+	}
+	if len(list.Elements) == 0 {
+		return nil, fmt.Errorf("car of empty list")
+	}
+	return list.Elements[0], nil
+}
+
+// builtinCdr is built-in implementation of cdr list operation. It retrieves the rest elements of a list.
+func builtinCdr(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("wrong number of arguments to cdr")
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	list, ok := val.(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to cdr: %v", val)
+	}
+	if len(list.Elements) == 0 {
+		return &LispList{Elements: []LispValue{}}, nil
+	}
+	return &LispList{Elements: list.Elements[1:]}, nil
+}
+
+// builtinCons is built-in implementation of cons list operation. It add element to a list.
+func builtinCons(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("wrong number of arguments to cons")
+	}
+	elem, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	val, err := Eval(env, args[1])
+	if err != nil {
+		return nil, err
+	}
+	list, ok := val.(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to cons: %v", val)
+	}
+	return &LispList{Elements: append([]LispValue{elem}, list.Elements...)}, nil
+}
+
+// builtinLength is built-in implementation of length list operation. It retrieves the length of a list.
+func builtinLength(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("wrong number of arguments to length")
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	list, ok := val.(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to length: %v", val)
+	}
+	return &LispNumber{Value: len(list.Elements)}, nil
+}
+
+// builtinAppend is built-in implementation of append list operation. It add a list to another list.
+func builtinAppend(env Environment, args []LispValue) (LispValue, error) {
+	var result []LispValue
+	for _, arg := range args {
+		val, err := Eval(env, arg)
+		if err != nil {
+			return nil, err
+		}
+		list, ok := val.(*LispList)
+		if !ok {
+			return nil, fmt.Errorf("invalid argument to append: %v", val)
+		}
+		result = append(result, list.Elements...)
+	}
+	return &LispList{Elements: result}, nil
 }
 
 func callFunction(env Environment, name string, args []LispValue) (LispValue, error) {
@@ -549,7 +671,9 @@ func initEnvironment() Environment {
 func main() {
 	env := initEnvironment()
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Welcome to GoLisp! Type your expressions below.")
+	fmt.Println("- - - - - - - - - - - - - + - - - - - - - - - - - -")
+	fmt.Println("| Welcome to GoLisp! Type your expressions below. |")
+	fmt.Println("- - - - - - - - - - - - - + - - - - - - - - - - - -")
 	for {
 		fmt.Print("> ")
 		if !scanner.Scan() {

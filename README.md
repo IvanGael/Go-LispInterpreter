@@ -7,10 +7,12 @@ Simple implementation of lisp interpreter in Go
 - Evaluate Expressions: An evaluator that recursively processes expressions, handling atoms, function calls, and special forms.
 - Define Built-in Functions: Functions like addition, subtraction, multiplication, division and conditionals.
 - Support User-Defined Functions: Allow users to define their own functions using defun.
-- Support for lambda functions, local variable bindings and logical operation
+- Support for lambda functions, local variables bindings(let) and logical operations(and, or and not)
+- Support for basic list operations (car, cdr, cons, length, and append)
 - Create a REPL: Build a Read-Eval-Print Loop (REPL) for interactive use.
 
 ### Example Interaction
+Arithmetic operations
 ````
 > (+ 1 2)
 3
@@ -23,6 +25,7 @@ Simple implementation of lisp interpreter in Go
 ````
 
 
+Function definitions and conditionals
 ````
 > (defun square (x) (* x x))
 <function>
@@ -47,7 +50,7 @@ greater
 
 ````
 
-
+Local variable bindings
 ````
 > (let ((square (lambda (x) (* x x))))
     (square 5))
@@ -56,10 +59,13 @@ greater
 > (let ((a 10) (b 20))
     (+ a b))
 30
-
+> (let ((a 6))
+    (if (and (< a 5) (> a 0)) "3 is comprised between 0 and 5" "3 is not comprised between 0 and 5"))
+    "3 is not comprised between 0 and 5"
 ````
 
 
+Logical operations
 ````
 > (and true true)
 true
@@ -75,9 +81,19 @@ false
 true
 ````
 
+
+List operations
 ````
-(let ((a 6))
-    (if (and (< a 5) (> a 0)) "3 is comprised between 0 and 5" "3 is not comprised between 0 and 5"))
+> (car (list 1 2 3))
+1
+> (cdr (list 1 2 3))
+(2 3)
+> (cons 1 (list 2 3))
+(1 2 3)
+> (length (list 1 2 3 4))
+4
+> (append (list 1 2) (list 3 4))
+(1 2 3 4)
 ````
 
 ### Testing
