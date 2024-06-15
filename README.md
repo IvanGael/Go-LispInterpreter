@@ -7,6 +7,7 @@ Simple implementation of lisp interpreter in Go
 - Evaluate Expressions: An evaluator that recursively processes expressions, handling atoms, function calls, and special forms.
 - Define Built-in Functions: Functions like addition, subtraction, multiplication, division and conditionals.
 - Support User-Defined Functions: Allow users to define their own functions using defun.
+- Support for lambda functions, local variable bindings and logical operation
 - Create a REPL: Build a Read-Eval-Print Loop (REPL) for interactive use.
 
 ### Example Interaction
