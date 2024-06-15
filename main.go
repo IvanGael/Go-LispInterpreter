@@ -32,6 +32,15 @@ func (n *LispNumber) String() string {
 	return strconv.Itoa(n.Value)
 }
 
+// LispFloat represents a float value
+type LispFloat struct {
+	Value float64
+}
+
+func (n *LispFloat) String() string {
+	return strconv.FormatFloat(n.Value, 'f', 2, 64)
+}
+
 // LispString represents a string value
 type LispString struct {
 	Value string
