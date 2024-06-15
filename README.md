@@ -47,6 +47,38 @@ greater
 ````
 
 
+````
+> (let ((square (lambda (x) (* x x))))
+    (square 5))
+25
+
+> (let ((a 10) (b 20))
+    (+ a b))
+30
+
+````
+
+
+````
+> (and true true)
+true
+> (and true false)
+false
+> (or true false)
+true
+> (or true true)
+true
+> (not true)
+false
+> (not false)
+true
+````
+
+````
+(let ((a 6))
+    (if (and (< a 5) (> a 0)) "3 is comprised between 0 and 5" "3 is not comprised between 0 and 5"))
+````
+
 ### Testing
 ````
 go test -v

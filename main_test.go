@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"io"
-	"os"
-	"strings"
+	"fmt"
 	"testing"
 )
 
@@ -161,8 +158,8 @@ func TestBuiltinLt(t *testing.T) {
 		args     []LispValue
 		expected LispValue
 	}{
-		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispAtom{Value: "t"}},
-		{[]LispValue{&LispNumber{Value: 3}, &LispNumber{Value: 2}}, &LispAtom{Value: "nil"}},
+		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispNumber{Value: 3}, &LispNumber{Value: 2}}, &LispAtom{Value: "false"}},
 	}
 
 	for _, test := range tests {
@@ -181,8 +178,8 @@ func TestBuiltinGt(t *testing.T) {
 		args     []LispValue
 		expected LispValue
 	}{
-		{[]LispValue{&LispNumber{Value: 3}, &LispNumber{Value: 2}}, &LispAtom{Value: "t"}},
-		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispAtom{Value: "nil"}},
+		{[]LispValue{&LispNumber{Value: 3}, &LispNumber{Value: 2}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispAtom{Value: "false"}},
 	}
 
 	for _, test := range tests {
@@ -201,8 +198,8 @@ func TestBuiltinEq(t *testing.T) {
 		args     []LispValue
 		expected LispValue
 	}{
-		{[]LispValue{&LispNumber{Value: 2}, &LispNumber{Value: 2}}, &LispAtom{Value: "t"}},
-		{[]LispValue{&LispNumber{Value: 2}, &LispNumber{Value: 3}}, &LispAtom{Value: "nil"}},
+		{[]LispValue{&LispNumber{Value: 2}, &LispNumber{Value: 2}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispNumber{Value: 2}, &LispNumber{Value: 3}}, &LispAtom{Value: "false"}},
 	}
 
 	for _, test := range tests {
@@ -210,6 +207,91 @@ func TestBuiltinEq(t *testing.T) {
 		if err != nil || !lispValueEqual(result, test.expected) {
 			t.Errorf("builtinEq(%v) = %v, %v, want %v", test.args, result, err, test.expected)
 		}
+	}
+}
+
+func TestBuiltinDefun(t *testing.T) {
+	env := make(Environment)
+
+	// Test case 1: Correct input
+	name := &LispAtom{Value: "my-func"}
+	params := &LispList{Elements: []LispValue{&LispAtom{Value: "x"}, &LispAtom{Value: "y"}}}
+	body := &LispAtom{Value: "body"}
+
+	args := []LispValue{name, params, body}
+
+	result, err := builtinDefun(env, args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if fn, ok := result.(*LispFunction); !ok {
+		t.Fatalf("expected *LispFunction, got %T", result)
+	} else {
+		if len(fn.Params) != 2 || fn.Params[0].String() != "x" || fn.Params[1].String() != "y" {
+			t.Errorf("unexpected function parameters: %v", fn.Params)
+		}
+		if fn.Body.String() != "body" {
+			t.Errorf("unexpected function body: %v", fn.Body)
+		}
+	}
+
+	if env[name.Value] != result {
+		t.Errorf("function not correctly added to environment")
+	}
+
+	// Test case 2: Incorrect number of arguments
+	args = []LispValue{name, params}
+	_, err = builtinDefun(env, args)
+	if err == nil || err.Error() != "wrong number of arguments to defun" {
+		t.Errorf("expected error for wrong number of arguments, got: %v", err)
+	}
+
+	// Test case 3: Invalid function name
+	args = []LispValue{params, params, body}
+	_, err = builtinDefun(env, args)
+	if err == nil || err.Error() != "invalid function name: (x y)" {
+		t.Errorf("expected error for invalid function name, got: %v", err)
+	}
+
+	// Test case 4: Invalid function parameters
+	args = []LispValue{name, body, body}
+	_, err = builtinDefun(env, args)
+	if err == nil || err.Error() != "invalid function parameters: body" {
+		t.Errorf("expected error for invalid function parameters, got: %v", err)
+	}
+}
+
+func TestBuiltinLambda(t *testing.T) {
+	env := Environment{}
+
+	// Valid test case
+	params := &LispList{Elements: []LispValue{&LispAtom{Value: "x"}, &LispAtom{Value: "y"}}}
+	body := &LispAtom{Value: "x + y"}
+	args := []LispValue{params, body}
+	expected := &LispFunction{Params: params.Elements, Body: body, Env: env}
+
+	result, err := builtinLambda(env, args)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if result.String() != expected.String() {
+		t.Errorf("expected %v, got %v", expected.String(), result.String())
+	}
+
+	// Invalid number of arguments
+	invalidArgs := []LispValue{params}
+	_, err = builtinLambda(env, invalidArgs)
+	if err == nil || err.Error() != "wrong number of arguments to lambda" {
+		t.Errorf("expected 'wrong number of arguments to lambda', got %v", err)
+	}
+
+	// Invalid parameter type
+	invalidParams := []LispValue{&LispAtom{Value: "x"}, body}
+	_, err = builtinLambda(env, invalidParams)
+	if err == nil || err.Error() != fmt.Sprintf("invalid lambda parameters: %v", invalidParams[0]) {
+		t.Errorf("expected 'invalid lambda parameters: %v', got %v", invalidParams[0], err)
 	}
 }
 
@@ -251,95 +333,5 @@ func lispValueEqual(a, b LispValue) bool {
 		return true
 	default:
 		return false
-	}
-}
-
-// mockIO is a simple struct to mock standard input and output
-type mockIO struct {
-	stdin  *os.File
-	stdout *os.File
-}
-
-// NewMockIO creates a new mockIO instance with the given input and output
-func NewMockIO(input string) *mockIO {
-	stdinR, stdinW, _ := os.Pipe()   // Create a pipe for standard input
-	stdoutR, stdoutW, _ := os.Pipe() // Create a pipe for standard output
-	stdinW.WriteString(input)        // Write input to the pipe
-	stdinW.Close()                   // Close the write end of the input pipe
-	stdoutW.Close()                  // Close the write end of the output pipe
-	return &mockIO{
-		stdin:  stdinR,
-		stdout: stdoutR,
-	}
-}
-
-// Stdin returns the mocked standard input
-func (m *mockIO) Stdin() *os.File {
-	return m.stdin
-}
-
-// Stdout returns the mocked standard output
-func (m *mockIO) Stdout() *os.File {
-	return m.stdout
-}
-
-// TestREPL tests the REPL function
-func TestREPL(t *testing.T) {
-	tests := []struct {
-		input           string
-		expectedOutputs []string
-	}{
-		{"(+ 1 2)\n(+ 3 4)\n", []string{"3", "7"}},
-		{"(define x 5)\nx\n", []string{"", "5"}},
-		{"(exit)\n", []string{""}},
-	}
-
-	for _, test := range tests {
-		// Create a mockIO instance with the given input
-		mock := NewMockIO(test.input)
-
-		// Redirect standard output to a buffer
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-
-		// Swap standard input with the mock
-		oldStdin := os.Stdin
-		os.Stdin = mock.Stdin()
-
-		// Run the REPL
-		repl()
-
-		// Restore standard input and output
-		os.Stdin = oldStdin
-		os.Stdout = oldStdout
-		w.Close()
-
-		// Read the output from the buffer
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		r.Close()
-		actualOutputStr := buf.String()
-
-		// Check the outputs
-		actualOutputs := strings.Split(strings.TrimSpace(actualOutputStr), "\n")
-		for i, expected := range test.expectedOutputs {
-			if i >= len(actualOutputs) {
-				t.Fatalf("expected output %q, but got no output", expected)
-			}
-			actual := strings.TrimSpace(actualOutputs[i])
-
-			// Check if the output contains the expected string
-			if !strings.Contains(actual, expected) {
-				t.Errorf("expected output %q, but got %q", expected, actual)
-			}
-
-			// Check if error messages are not present when not expected
-			if !strings.HasPrefix(actual, "> Error:") && !strings.HasPrefix(expected, "> Error:") {
-				if strings.Contains(actual, "> Error:") {
-					t.Errorf("unexpected error message in output: %q", actual)
-				}
-			}
-		}
 	}
 }

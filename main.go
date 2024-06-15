@@ -9,7 +9,7 @@ import (
 	"unicode"
 )
 
-// LispValue represents a value in our Lisp interpreter
+// LispValue represents a value
 type LispValue interface {
 	String() string
 }
@@ -57,6 +57,17 @@ func (l *LispList) String() string {
 	}
 	sb.WriteString(")")
 	return sb.String()
+}
+
+// LispFunction represents a user-defined function
+type LispFunction struct {
+	Params []LispValue
+	Body   LispValue
+	Env    Environment
+}
+
+func (f *LispFunction) String() string {
+	return "<function>"
 }
 
 // Tokenize splits the input string into tokens
@@ -135,8 +146,6 @@ func Parse(tokens []string) (LispValue, []string, error) {
 		}
 		tokens = tokens[1:]
 		return &LispList{Elements: elements}, tokens, nil
-	case ")":
-		return nil, nil, fmt.Errorf("unexpected )")
 	default:
 		if strings.HasPrefix(token, "\"") && strings.HasSuffix(token, "\"") {
 			return &LispString{Value: token[1 : len(token)-1]}, tokens, nil
@@ -191,6 +200,16 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 			return builtinIf(env, args)
 		case "defun":
 			return builtinDefun(env, args)
+		case "lambda":
+			return builtinLambda(env, args)
+		case "let":
+			return builtinLet(env, args)
+		case "and":
+			return builtinAnd(env, args)
+		case "or":
+			return builtinOr(env, args)
+		case "not":
+			return builtinNot(env, args)
 		default:
 			return callFunction(env, fn.Value, args)
 		}
@@ -229,7 +248,7 @@ func builtinSub(env Environment, args []LispValue) (LispValue, error) {
 	if !ok {
 		return nil, fmt.Errorf("invalid argument to -: %v", val)
 	}
-	result := number.Value
+	diff := number.Value
 	for _, arg := range args[1:] {
 		val, err := Eval(env, arg)
 		if err != nil {
@@ -239,13 +258,13 @@ func builtinSub(env Environment, args []LispValue) (LispValue, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid argument to -: %v", val)
 		}
-		result -= number.Value
+		diff -= number.Value
 	}
-	return &LispNumber{Value: result}, nil
+	return &LispNumber{Value: diff}, nil
 }
 
 func builtinMul(env Environment, args []LispValue) (LispValue, error) {
-	product := 1
+	prod := 1
 	for _, arg := range args {
 		val, err := Eval(env, arg)
 		if err != nil {
@@ -255,117 +274,124 @@ func builtinMul(env Environment, args []LispValue) (LispValue, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid argument to *: %v", val)
 		}
-		product *= number.Value
+		prod *= number.Value
 	}
-	return &LispNumber{Value: product}, nil
+	return &LispNumber{Value: prod}, nil
 }
 
 func builtinDiv(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("wrong number of arguments to /")
 	}
+
 	val, err := Eval(env, args[0])
 	if err != nil {
 		return nil, err
 	}
+
 	number, ok := val.(*LispNumber)
 	if !ok {
 		return nil, fmt.Errorf("invalid argument to /: %v", val)
 	}
-	result := number.Value
+
+	quot := number.Value
 	for _, arg := range args[1:] {
 		val, err := Eval(env, arg)
 		if err != nil {
 			return nil, err
 		}
+
 		number, ok := val.(*LispNumber)
 		if !ok {
 			return nil, fmt.Errorf("invalid argument to /: %v", val)
 		}
+
 		if number.Value == 0 {
 			return nil, fmt.Errorf("division by zero")
 		}
-		result /= number.Value
+
+		quot /= number.Value
 	}
-	return &LispNumber{Value: result}, nil
+
+	return &LispNumber{Value: quot}, nil
 }
 
 func builtinLt(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to <")
 	}
-	left, err := Eval(env, args[0])
+	val1, err := Eval(env, args[0])
 	if err != nil {
 		return nil, err
 	}
-	right, err := Eval(env, args[1])
+	val2, err := Eval(env, args[1])
 	if err != nil {
 		return nil, err
 	}
-	leftNum, ok := left.(*LispNumber)
+	num1, ok := val1.(*LispNumber)
 	if !ok {
-		return nil, fmt.Errorf("invalid argument to <: %v", left)
+		return nil, fmt.Errorf("invalid argument to <: %v", val1)
 	}
-	rightNum, ok := right.(*LispNumber)
+	num2, ok := val2.(*LispNumber)
 	if !ok {
-		return nil, fmt.Errorf("invalid argument to <: %v", right)
+		return nil, fmt.Errorf("invalid argument to <: %v", val2)
 	}
-	if leftNum.Value < rightNum.Value {
-		return &LispAtom{Value: "t"}, nil
+	if num1.Value < num2.Value {
+		return &LispAtom{Value: "true"}, nil
 	}
-	return &LispAtom{Value: "nil"}, nil
+	return &LispAtom{Value: "false"}, nil
 }
 
 func builtinGt(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to >")
 	}
-	left, err := Eval(env, args[0])
+	val1, err := Eval(env, args[0])
 	if err != nil {
 		return nil, err
 	}
-	right, err := Eval(env, args[1])
+	val2, err := Eval(env, args[1])
 	if err != nil {
 		return nil, err
 	}
-	leftNum, ok := left.(*LispNumber)
+	num1, ok := val1.(*LispNumber)
 	if !ok {
-		return nil, fmt.Errorf("invalid argument to >: %v", left)
+		return nil, fmt.Errorf("invalid argument to >: %v", val1)
 	}
-	rightNum, ok := right.(*LispNumber)
+	num2, ok := val2.(*LispNumber)
 	if !ok {
-		return nil, fmt.Errorf("invalid argument to >: %v", right)
+		return nil, fmt.Errorf("invalid argument to >: %v", val2)
 	}
-	if leftNum.Value > rightNum.Value {
-		return &LispAtom{Value: "t"}, nil
+	if num1.Value > num2.Value {
+		return &LispAtom{Value: "true"}, nil
 	}
-	return &LispAtom{Value: "nil"}, nil
+	return &LispAtom{Value: "false"}, nil
 }
 
 func builtinEq(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("wrong number of arguments to =")
 	}
-	left, err := Eval(env, args[0])
+	val1, err := Eval(env, args[0])
 	if err != nil {
 		return nil, err
 	}
-	right, err := Eval(env, args[1])
+	val2, err := Eval(env, args[1])
 	if err != nil {
 		return nil, err
 	}
-	leftNum, ok := left.(*LispNumber)
-	if !ok {
-		return nil, fmt.Errorf("invalid argument to =: %v", left)
+	num1, ok1 := val1.(*LispNumber)
+	num2, ok2 := val2.(*LispNumber)
+	if ok1 && ok2 {
+		if num1.Value == num2.Value {
+			return &LispAtom{Value: "true"}, nil
+		}
+		return &LispAtom{Value: "false"}, nil
 	}
-	rightNum, ok := right.(*LispNumber)
-	if !ok {
-		return nil, fmt.Errorf("invalid argument to =: %v", right)
+	if val1.String() == val2.String() {
+		return &LispAtom{Value: "true"}, nil
 	}
-	if leftNum.Value == rightNum.Value {
-		return &LispAtom{Value: "t"}, nil
-	}
-	return &LispAtom{Value: "nil"}, nil
+	return &LispAtom{Value: "false"}, nil
 }
 
 func builtinIf(env Environment, args []LispValue) (LispValue, error) {
@@ -376,98 +402,174 @@ func builtinIf(env Environment, args []LispValue) (LispValue, error) {
 	if err != nil {
 		return nil, err
 	}
-	condAtom, ok := cond.(*LispAtom)
-	if !ok {
-		return nil, fmt.Errorf("invalid condition in if: %v", cond)
-	}
-	if condAtom.Value != "nil" {
+	if atom, ok := cond.(*LispAtom); ok && atom.Value == "true" {
 		return Eval(env, args[1])
 	}
 	return Eval(env, args[2])
 }
 
 func builtinDefun(env Environment, args []LispValue) (LispValue, error) {
-	if len(args) < 3 {
+	if len(args) != 3 {
 		return nil, fmt.Errorf("wrong number of arguments to defun")
 	}
-	nameAtom, ok := args[0].(*LispAtom)
+	name, ok := args[0].(*LispAtom)
 	if !ok {
 		return nil, fmt.Errorf("invalid function name: %v", args[0])
 	}
-	paramsList, ok := args[1].(*LispList)
+	params, ok := args[1].(*LispList)
 	if !ok {
-		return nil, fmt.Errorf("invalid parameter list: %v", args[1])
+		return nil, fmt.Errorf("invalid function parameters: %v", args[1])
 	}
-	body := args[2]
-	env[nameAtom.Value] = &LispFunction{
-		Params: paramsList.Elements,
-		Body:   body,
+	fn := &LispFunction{Params: params.Elements, Body: args[2], Env: env}
+	env[name.Value] = fn
+	return fn, nil
+}
+
+func builtinLambda(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("wrong number of arguments to lambda")
 	}
-	return nameAtom, nil
-}
-
-// LispFunction represents a user-defined function
-type LispFunction struct {
-	Params []LispValue
-	Body   LispValue
-}
-
-func (f *LispFunction) String() string {
-	return "<function>"
-}
-
-func callFunction(env Environment, name string, args []LispValue) (LispValue, error) {
-	fn, ok := env[name].(*LispFunction)
+	params, ok := args[0].(*LispList)
 	if !ok {
-		return nil, fmt.Errorf("undefined function: %s", name)
+		return nil, fmt.Errorf("invalid lambda parameters: %v", args[0])
 	}
-	if len(args) != len(fn.Params) {
-		return nil, fmt.Errorf("wrong number of arguments to %s", name)
+	return &LispFunction{Params: params.Elements, Body: args[1], Env: env}, nil
+}
+
+func builtinLet(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("wrong number of arguments to let")
 	}
-	newEnv := make(Environment)
-	for key, val := range env {
-		newEnv[key] = val
+	bindings, ok := args[0].(*LispList)
+	if !ok {
+		return nil, fmt.Errorf("invalid let bindings: %v", args[0])
 	}
-	for i, param := range fn.Params {
-		paramAtom, ok := param.(*LispAtom)
-		if !ok {
-			return nil, fmt.Errorf("invalid parameter: %v", param)
+	localEnv := make(Environment)
+	for key, value := range env {
+		localEnv[key] = value
+	}
+	for _, binding := range bindings.Elements {
+		bindList, ok := binding.(*LispList)
+		if !ok || len(bindList.Elements) != 2 {
+			return nil, fmt.Errorf("invalid let binding: %v", binding)
 		}
-		argValue, err := Eval(env, args[i])
+		key, ok := bindList.Elements[0].(*LispAtom)
+		if !ok {
+			return nil, fmt.Errorf("invalid let binding key: %v", bindList.Elements[0])
+		}
+		val, err := Eval(localEnv, bindList.Elements[1])
 		if err != nil {
 			return nil, err
 		}
-		newEnv[paramAtom.Value] = argValue
+		localEnv[key.Value] = val
 	}
-	return Eval(newEnv, fn.Body)
+	return Eval(localEnv, args[1])
 }
 
-// REPL implementation
+func builtinAnd(env Environment, args []LispValue) (LispValue, error) {
+	for _, arg := range args {
+		val, err := Eval(env, arg)
+		if err != nil {
+			return nil, err
+		}
+		if atom, ok := val.(*LispAtom); ok && atom.Value == "false" {
+			return &LispAtom{Value: "false"}, nil
+		}
+	}
+	return &LispAtom{Value: "true"}, nil
+}
 
-func repl() {
+func builtinOr(env Environment, args []LispValue) (LispValue, error) {
+	for _, arg := range args {
+		val, err := Eval(env, arg)
+		if err != nil {
+			return nil, err
+		}
+		if atom, ok := val.(*LispAtom); ok && atom.Value == "true" {
+			return &LispAtom{Value: "true"}, nil
+		}
+	}
+	return &LispAtom{Value: "false"}, nil
+}
+
+func builtinNot(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("wrong number of arguments to not")
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	if atom, ok := val.(*LispAtom); ok && atom.Value == "false" {
+		return &LispAtom{Value: "true"}, nil
+	}
+	return &LispAtom{Value: "false"}, nil
+}
+
+func callFunction(env Environment, name string, args []LispValue) (LispValue, error) {
+	fn, ok := env[name]
+	if !ok {
+		return nil, fmt.Errorf("undefined function: %s", name)
+	}
+	lambda, ok := fn.(*LispFunction)
+	if !ok {
+		return nil, fmt.Errorf("invalid function: %s", name)
+	}
+	if len(lambda.Params) != len(args) {
+		return nil, fmt.Errorf("wrong number of arguments to %s", name)
+	}
+	localEnv := make(Environment)
+	for key, value := range lambda.Env {
+		localEnv[key] = value
+	}
+	for i, param := range lambda.Params {
+		paramName, ok := param.(*LispAtom)
+		if !ok {
+			return nil, fmt.Errorf("invalid parameter name: %v", param)
+		}
+		argVal, err := Eval(env, args[i])
+		if err != nil {
+			return nil, err
+		}
+		localEnv[paramName.Value] = argVal
+	}
+	return Eval(localEnv, lambda.Body)
+}
+
+func initEnvironment() Environment {
 	env := make(Environment)
+	env["t"] = &LispAtom{Value: "t"}
+	env["nil"] = &LispAtom{Value: "nil"}
+	env["true"] = &LispAtom{Value: "true"}
+	env["false"] = &LispAtom{Value: "false"}
+	return env
+}
+
+// REPL
+func main() {
+	env := initEnvironment()
 	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Welcome to GoLisp! Type your expressions below.")
 	for {
 		fmt.Print("> ")
 		if !scanner.Scan() {
 			break
 		}
-		input := scanner.Text()
-		tokens := Tokenize(input)
-		ast, _, err := Parse(tokens)
+		line := scanner.Text()
+		tokens := Tokenize(line)
+		expr, _, err := Parse(tokens)
 		if err != nil {
 			fmt.Println("Error:", err)
 			continue
 		}
-		result, err := Eval(env, ast)
+		result, err := Eval(env, expr)
 		if err != nil {
 			fmt.Println("Error:", err)
 			continue
 		}
 		fmt.Println(result)
 	}
-}
-
-func main() {
-	repl()
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error reading input:", err)
+	}
 }
