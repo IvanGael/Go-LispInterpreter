@@ -91,7 +91,7 @@ List operations
 > (cons 1 (list 2 3))
 (1 2 3)
 > (length (list 1 2 3 4))
-4
+4 
 > (append (list 1 2) (list 3 4))
 (1 2 3 4)
 ````
