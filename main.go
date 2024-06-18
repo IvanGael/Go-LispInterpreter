@@ -70,13 +70,14 @@ func (l *LispList) String() string {
 
 // LispFunction represents a user-defined function
 type LispFunction struct {
+	Name   *LispAtom
 	Params []LispValue
 	Body   LispValue
 	Env    Environment
 }
 
 func (f *LispFunction) String() string {
-	return "<function>"
+	return strings.ToUpper(f.Name.Value)
 }
 
 // Tokenize splits the input string into tokens
@@ -191,6 +192,8 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 		}
 		args := v.Elements[1:]
 		switch fn.Value {
+		case "format":
+			return builtinFormat(env, args)
 		case "+":
 			return builtinAdd(env, args)
 		case "-":
@@ -239,7 +242,63 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 	}
 }
 
+// Helper function to convert Lisp values to Go values
+func lispValueToGoValue(value LispValue) interface{} {
+	switch v := value.(type) {
+	case *LispNumber:
+		return v.Value
+	case *LispString:
+		return v.Value
+	case *LispAtom:
+		return v.Value
+	default:
+		return v
+	}
+}
+
 // Built-in function implementations
+
+// builtinFormat is the implementation of the format function
+func builtinFormat(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) < 2 {
+		return nil, fmt.Errorf("wrong number of arguments to format")
+	}
+
+	// The first argument to format is a boolean specifying whether to print to stdout
+	// destination, ok := args[0].(*LispAtom)
+	// if !ok {
+	//     return nil, fmt.Errorf("invalid destination: %v", args[0])
+	// }
+	// toStdout := destination.Value == "t"
+
+	// The second argument is the format string
+	formatStr, ok := args[1].(*LispString)
+	if !ok {
+		return nil, fmt.Errorf("invalid format string: %v", args[1])
+	}
+
+	// The remaining arguments are the values to be formatted
+	formatArgs := args[2:]
+
+	// Prepare the arguments for fmt.Sprintf
+	var sprintfArgs []interface{}
+	for _, arg := range formatArgs {
+		evalArg, err := Eval(env, arg)
+		if err != nil {
+			return nil, err
+		}
+		sprintfArgs = append(sprintfArgs, lispValueToGoValue(evalArg))
+	}
+
+	// Perform the formatting
+	formattedStr := fmt.Sprintf(formatStr.Value, sprintfArgs...)
+
+	// if toStdout {
+	//     fmt.Print(formattedStr)
+	// }
+
+	return &LispString{Value: formattedStr}, nil
+}
 
 // builtinAdd is built-in implementation of addition operation
 func builtinAdd(env Environment, args []LispValue) (LispValue, error) {
@@ -450,7 +509,7 @@ func builtinDefun(env Environment, args []LispValue) (LispValue, error) {
 	if !ok {
 		return nil, fmt.Errorf("invalid function parameters: %v", args[1])
 	}
-	fn := &LispFunction{Params: params.Elements, Body: args[2], Env: env}
+	fn := &LispFunction{Name: name, Params: params.Elements, Body: args[2], Env: env}
 	env[name.Value] = fn
 	return fn, nil
 }
@@ -676,33 +735,63 @@ func initEnvironment() Environment {
 	return env
 }
 
-// REPL
+// readFile reads the content of a file and returns it as a string
+func readFile(filepath string) (string, error) {
+	data, err := os.ReadFile(filepath)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// REPL or File Execution
 func main() {
 	env := initEnvironment()
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("- - - - - - - - - - - - - + - - - - - - - - - - - -")
-	fmt.Println("| Welcome to GoLisp! Type your expressions below. |")
-	fmt.Println("- - - - - - - - - - - - - + - - - - - - - - - - - -")
-	for {
-		fmt.Print("> ")
-		if !scanner.Scan() {
-			break
+	if len(os.Args) > 1 {
+		// File execution mode
+		filepath := os.Args[1]
+		content, err := readFile(filepath)
+		if err != nil {
+			fmt.Println("Error reading file:", err)
+			return
 		}
-		line := scanner.Text()
-		tokens := Tokenize(line)
+		tokens := Tokenize(content)
 		expr, _, err := Parse(tokens)
 		if err != nil {
-			fmt.Println("Error:", err)
-			continue
+			fmt.Println("Error parsing file:", err)
+			return
 		}
 		result, err := Eval(env, expr)
 		if err != nil {
-			fmt.Println("Error:", err)
-			continue
+			fmt.Println("Error evaluating file:", err)
+			return
 		}
 		fmt.Println(result)
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading input:", err)
+	} else {
+		// REPL mode
+		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Println(" -----+ Welcome to GoLisp! Type your expressions below. +----- ")
+		for {
+			fmt.Print("cclisp> ")
+			if !scanner.Scan() {
+				break
+			}
+			line := scanner.Text()
+			tokens := Tokenize(line)
+			expr, _, err := Parse(tokens)
+			if err != nil {
+				fmt.Println("Error:", err)
+				continue
+			}
+			result, err := Eval(env, expr)
+			if err != nil {
+				fmt.Println("Error:", err)
+				continue
+			}
+			fmt.Println(result)
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Println("Error reading input:", err)
+		}
 	}
 }

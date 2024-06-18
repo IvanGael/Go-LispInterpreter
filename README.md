@@ -5,10 +5,12 @@ Simple implementation of lisp interpreter in Go
 - Subset of Lisp: basic arithmetic operations, conditionals, and function definitions.
 - Parse Input: A parser to read and tokenize Lisp expressions.
 - Evaluate Expressions: An evaluator that recursively processes expressions, handling atoms, function calls, and special forms.
+- Format function to handle the formatting of the string based on the provided arguments.
 - Define Built-in Functions: Functions like addition, subtraction, multiplication, division and conditionals.
 - Support User-Defined Functions: Allow users to define their own functions using defun.
 - Support for lambda functions, local variables bindings(let) and logical operations(and, or and not)
 - Support for basic list operations (car, cdr, cons, length, and append)
+- Support for reading and execution of a Lisp script from file
 - Create a REPL: Build a Read-Eval-Print Loop (REPL) for interactive use.
 
 ### Example Interaction
@@ -96,7 +98,41 @@ List operations
 (1 2 3 4)
 ````
 
+Formatting
+````
+> (format t "Hello World")
+> (let ((hello (lambda (nil)(nil) )))
+    (format t "Hello Coding Challenge World"))
+"Hello Coding Challenge World"
+> (let ((doublen (lambda (n) (* n 2))))
+    ((format t "The double of 5 is %d" (doublen 5))))
+"The double of 5 is 10"
+> (let ((fact (lambda (n)
+  (if (< n 1)
+    1
+    (* n (fact (- n 1)))))))
+    (format t "Factorial of 5 is %d" (fact 5)))
+"Factorial of 5 is 120"
+````
+
+
+### Run
+
+- REPL mode
+````
+go run main.go
+````
+
+- File execution mode
+````
+go run main.go script.lisp
+````
+
 ### Testing
 ````
 go test -v
 ````
+
+
+### known Issues
+Only one instruction can be handled at a time. If several instructions are provided one after the other, only the first instruction will be evaluated.
