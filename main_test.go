@@ -357,6 +357,168 @@ func TestBuiltinLambda(t *testing.T) {
 	}
 }
 
+// TestBuiltinAnd tests the builtinAnd function
+func TestBuiltinAnd(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "true"}, &LispString{Value: "false"}}, &LispAtom{Value: "false"}},
+		{[]LispValue{&LispString{Value: "true"}, &LispString{Value: "true"}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispString{Value: "false"}, &LispString{Value: "false"}}, &LispAtom{Value: "false"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinAnd(env, test.args)
+		if err != nil {
+			t.Errorf("builtinAnd(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinOr tests the builtinOr function
+func TestBuiltinOr(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "true"}, &LispString{Value: "false"}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispString{Value: "true"}, &LispString{Value: "true"}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispString{Value: "false"}, &LispString{Value: "false"}}, &LispAtom{Value: "false"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinOr(env, test.args)
+		if err != nil {
+			t.Errorf("builtinOr(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinNot tests the builtinNot function
+func TestBuiltinNot(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "true"}}, &LispAtom{Value: "false"}},
+		{[]LispValue{&LispString{Value: "false"}}, &LispAtom{Value: "true"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinNot(env, test.args)
+		if err != nil {
+			t.Errorf("builtinNot(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinCar tests the builtinCar function
+func TestBuiltinCar(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}}}}, &LispNumber{Value: 1}},
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 2}, &LispNumber{Value: 4}, &LispNumber{Value: 6}}}}, &LispNumber{Value: 1}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinCar(env, test.args)
+		if err != nil {
+			t.Errorf("builtinCar(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinCdr tests the builtinCdr function
+func TestBuiltinCdr(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}}}}, &LispList{Elements: []LispValue{&LispNumber{Value: 2}, &LispNumber{Value: 3}}}},
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 2}, &LispNumber{Value: 4}, &LispNumber{Value: 6}}}}, &LispList{Elements: []LispValue{&LispNumber{Value: 4}, &LispNumber{Value: 6}}}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinCdr(env, test.args)
+		if err != nil {
+			t.Errorf("builtinCdr(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinCons tests the builtinCons function
+func TestBuiltinCons(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 0}, &LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}}}}, &LispList{Elements: []LispValue{&LispNumber{Value: 0}, &LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}}}},
+		{[]LispValue{&LispNumber{Value: 0}, &LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 2}, &LispNumber{Value: 4}, &LispNumber{Value: 6}}}}, &LispList{Elements: []LispValue{&LispNumber{Value: 0}, &LispNumber{Value: 2}, &LispNumber{Value: 4}, &LispNumber{Value: 6}}}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinCons(env, test.args)
+		if err != nil {
+			t.Errorf("builtinCons(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinLength tests the builtinLength function
+func TestBuiltinLength(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}}}}, &LispNumber{Value: 3}},
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 0}, &LispNumber{Value: 2}, &LispNumber{Value: 4}, &LispNumber{Value: 6}}}}, &LispNumber{Value: 4}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinLength(env, test.args)
+		if err != nil {
+			t.Errorf("builtinLength(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinAppend tests the builtinAppend function
+func TestBuiltinAppend(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}}}, &LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 10}, &LispNumber{Value: 11}, &LispNumber{Value: 12}}}}, &LispList{Elements: []LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}, &LispNumber{Value: 3}, &LispNumber{Value: 10}, &LispNumber{Value: 11}, &LispNumber{Value: 12}}}},
+		{[]LispValue{&LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 4}, &LispNumber{Value: 6}, &LispNumber{Value: 8}}}, &LispList{Elements: []LispValue{&LispAtom{Value: "list"}, &LispNumber{Value: 20}, &LispNumber{Value: 24}, &LispNumber{Value: 30}}}}, &LispList{Elements: []LispValue{&LispNumber{Value: 4}, &LispNumber{Value: 6}, &LispNumber{Value: 8}, &LispNumber{Value: 20}, &LispNumber{Value: 24}, &LispNumber{Value: 30}}}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinAppend(env, test.args)
+		if err != nil {
+			t.Errorf("builtinAppend(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
 // Helper functions for tests
 
 func equal(a, b []string) bool {
