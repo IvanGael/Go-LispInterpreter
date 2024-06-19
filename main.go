@@ -77,7 +77,10 @@ type LispFunction struct {
 }
 
 func (f *LispFunction) String() string {
-	return strings.ToUpper(f.Name.Value)
+	if f.Name != nil {
+		return strings.ToUpper(f.Name.Value)
+	}
+	return "FUNCTION"
 }
 
 // Tokenize splits the input string into tokens
@@ -204,8 +207,12 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 			return builtinDiv(env, args)
 		case "<":
 			return builtinLt(env, args)
+		case "<=":
+			return builtinLtOrEq(env, args)
 		case ">":
 			return builtinGt(env, args)
+		case ">=":
+			return builtinGtOrEq(env, args)
 		case "=":
 			return builtinEq(env, args)
 		case "if":
@@ -427,6 +434,33 @@ func builtinLt(env Environment, args []LispValue) (LispValue, error) {
 	return &LispAtom{Value: "false"}, nil
 }
 
+// builtinLtOrEq is built-in implementation of less or equal than condition
+func builtinLtOrEq(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("wrong number of arguments to <")
+	}
+	val1, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	val2, err := Eval(env, args[1])
+	if err != nil {
+		return nil, err
+	}
+	num1, ok := val1.(*LispNumber)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to <: %v", val1)
+	}
+	num2, ok := val2.(*LispNumber)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to <: %v", val2)
+	}
+	if num1.Value <= num2.Value {
+		return &LispAtom{Value: "true"}, nil
+	}
+	return &LispAtom{Value: "false"}, nil
+}
+
 // builtinGt is built-in implementation of greater than condition
 func builtinGt(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 2 {
@@ -449,6 +483,33 @@ func builtinGt(env Environment, args []LispValue) (LispValue, error) {
 		return nil, fmt.Errorf("invalid argument to >: %v", val2)
 	}
 	if num1.Value > num2.Value {
+		return &LispAtom{Value: "true"}, nil
+	}
+	return &LispAtom{Value: "false"}, nil
+}
+
+// builtinGtOrEq is built-in implementation of greater or equal than condition
+func builtinGtOrEq(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("wrong number of arguments to >")
+	}
+	val1, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	val2, err := Eval(env, args[1])
+	if err != nil {
+		return nil, err
+	}
+	num1, ok := val1.(*LispNumber)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to >: %v", val1)
+	}
+	num2, ok := val2.(*LispNumber)
+	if !ok {
+		return nil, fmt.Errorf("invalid argument to >: %v", val2)
+	}
+	if num1.Value >= num2.Value {
 		return &LispAtom{Value: "true"}, nil
 	}
 	return &LispAtom{Value: "false"}, nil

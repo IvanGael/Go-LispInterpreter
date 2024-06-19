@@ -68,6 +68,26 @@ func TestEval(t *testing.T) {
 	}
 }
 
+// TestBuiltinFormat tests the builtinFormat function
+func TestBuiltinFormat(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "t"}, &LispString{Value: "Hello"}}, &LispString{Value: "Hello"}},
+		{[]LispValue{&LispString{Value: "t"}, &LispString{Value: "Factorial of 5 is %d"}, &LispNumber{Value: 120}}, &LispString{Value: "Factorial of 5 is 120"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinFormat(env, test.args)
+		if err != nil {
+			t.Errorf("builtinFormat(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
 // TestBuiltinAdd tests the builtinAdd function
 func TestBuiltinAdd(t *testing.T) {
 	env := Environment{}
@@ -170,6 +190,26 @@ func TestBuiltinLt(t *testing.T) {
 	}
 }
 
+// TestBuiltinLtOrEq tests the builtinLtOrEq function
+func TestBuiltinLtOrEq(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispNumber{Value: 3}, &LispNumber{Value: 2}}, &LispAtom{Value: "false"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinLtOrEq(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinLtOrEq(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
 // TestBuiltinGt tests the builtinGt function
 func TestBuiltinGt(t *testing.T) {
 	env := Environment{}
@@ -184,6 +224,26 @@ func TestBuiltinGt(t *testing.T) {
 
 	for _, test := range tests {
 		result, err := builtinGt(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinGt(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinGtOrEq tests the builtinGtOrEq function
+func TestBuiltinGtOrEq(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 3}, &LispNumber{Value: 2}}, &LispAtom{Value: "true"}},
+		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispAtom{Value: "false"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinGtOrEq(env, test.args)
 		if err != nil || !lispValueEqual(result, test.expected) {
 			t.Errorf("builtinGt(%v) = %v, %v, want %v", test.args, result, err, test.expected)
 		}

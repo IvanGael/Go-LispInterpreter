@@ -10,8 +10,8 @@ Simple implementation of lisp interpreter in Go
 - Support User-Defined Functions: Allow users to define their own functions using defun.
 - Support for lambda functions, local variables bindings(let) and logical operations(and, or and not)
 - Support for basic list operations (car, cdr, cons, length, and append)
-- Support for reading and execution of a Lisp script from file
-- Create a REPL: Build a Read-Eval-Print Loop (REPL) for interactive use.
+- Support for reading and execution of a Lisp script from lisp file
+- A REPL: a Read-Eval-Print Loop (REPL) for interactive use.
 
 ### Example Interaction
 Arithmetic operations
@@ -108,7 +108,7 @@ Formatting
     ((format t "The double of 5 is %d" (doublen 5))))
 "The double of 5 is 10"
 > (let ((fact (lambda (n)
-  (if (< n 1)
+  (if (<= n 1)
     1
     (* n (fact (- n 1)))))))
     (format t "Factorial of 5 is %d" (fact 5)))
