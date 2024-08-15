@@ -30,7 +30,7 @@ Arithmetic operations
 Function definitions and conditionals
 ````
 > (defun square (x) (* x x))
-<function>
+SQUARE
 
 > (square 4)
 16
@@ -42,7 +42,7 @@ equal
 greater
 
 > (defun abs (x) (if (< x 0) (- 0 x) x))
-<function>
+ABS
 
 > (abs -7)
 7
