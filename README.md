@@ -133,6 +133,3 @@ go run main.go script.lisp
 go test -v
 ````
 
-
-### known Issues
-Only one instruction can be handled at a time. If several instructions are provided one after the other, only the first instruction will be evaluated.

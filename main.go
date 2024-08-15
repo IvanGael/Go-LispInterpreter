@@ -787,6 +787,37 @@ func callFunction(env Environment, name string, args []LispValue) (LispValue, er
 	return Eval(localEnv, lambda.Body)
 }
 
+func readMultilineInput(scanner *bufio.Scanner) string {
+	var input strings.Builder
+	parenCount := 0
+
+	for {
+		if !scanner.Scan() {
+			return input.String()
+		}
+		line := scanner.Text()
+		input.WriteString(line + "\n")
+
+		parenCount += strings.Count(line, "(") - strings.Count(line, ")")
+
+		if parenCount == 0 && input.Len() > 0 {
+			return input.String()
+		}
+	}
+}
+
+func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispValue, error) {
+	results := make([]LispValue, 0, len(expressions))
+	for _, expr := range expressions {
+		result, err := Eval(env, expr)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}
+
 func initEnvironment() Environment {
 	env := make(Environment)
 	env["t"] = &LispAtom{Value: "t"}
@@ -805,7 +836,7 @@ func readFile(filepath string) (string, error) {
 	return string(data), nil
 }
 
-// REPL or File Execution
+// main
 func main() {
 	env := initEnvironment()
 	if len(os.Args) > 1 {
@@ -822,34 +853,47 @@ func main() {
 			fmt.Println("Error parsing file:", err)
 			return
 		}
-		result, err := Eval(env, expr)
+		results, err := evalMultipleExpressions(env, expr.(*LispList).Elements)
 		if err != nil {
 			fmt.Println("Error evaluating file:", err)
 			return
 		}
-		fmt.Println(result)
+		for _, result := range results {
+			fmt.Println(result)
+		}
 	} else {
 		// REPL mode
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Println(" -----+ Welcome to GoLisp! Type your expressions below. +----- ")
 		for {
 			fmt.Print("cclisp> ")
-			if !scanner.Scan() {
+			input := readMultilineInput(scanner)
+			if input == "" {
 				break
 			}
-			line := scanner.Text()
-			tokens := Tokenize(line)
+			tokens := Tokenize(input)
 			expr, _, err := Parse(tokens)
 			if err != nil {
 				fmt.Println("Error:", err)
 				continue
 			}
-			result, err := Eval(env, expr)
-			if err != nil {
-				fmt.Println("Error:", err)
-				continue
+			if list, ok := expr.(*LispList); ok {
+				results, err := evalMultipleExpressions(env, list.Elements)
+				if err != nil {
+					fmt.Println("Error:", err)
+				} else {
+					for _, result := range results {
+						fmt.Println(result)
+					}
+				}
+			} else {
+				result, err := Eval(env, expr)
+				if err != nil {
+					fmt.Println("Error:", err)
+				} else {
+					fmt.Println(result)
+				}
 			}
-			fmt.Println(result)
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Println("Error reading input:", err)
