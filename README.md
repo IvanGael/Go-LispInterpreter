@@ -16,105 +16,104 @@ Simple implementation of lisp interpreter in Go
 ### Example Interaction
 Arithmetic operations
 ````
-> (+ 1 2)
+> ( (+ 1 2) )
 3
-> (- 10 4)
+> ( (- 10 4) )
 6
-> (* 3 4)
+> ( (* 3 4) )
 12
-> (/ 8 2)
+> ( (/ 8 2) )
 4
 ````
 
 
 Function definitions and conditionals
 ````
-> (defun square (x) (* x x))
+> ( (defun square (x) (* x x)) )
 SQUARE
 
-> (square 4)
+> ( (square 4) )
 16
 
-> (if (= 4 4) "equal" "not equal")
+> ( (if (= 4 4) "equal" "not equal") )
 equal
 
-> (if (> 10 5) "greater" "less")
+> ( (if (> 10 5) "greater" "less") )
 greater
 
-> (defun abs (x) (if (< x 0) (- 0 x) x))
+> ( (defun abs (x) (if (< x 0) (- 0 x) x)) )
 ABS
 
-> (abs -7)
+> ( (abs -7) )
 7
 
-> (abs 7)
+> ( (abs 7) )
 7
 
 ````
 
 Local variable bindings
 ````
-> (let ((square (lambda (x) (* x x))))
-    (square 5))
+> ( (let ((square (lambda (x) (* x x))))
+    (square 5)) )
 25
 
-> (let ((a 10) (b 20))
-    (+ a b))
+> ( (let ((a 10) (b 20))
+    (+ a b)) )
 30
-> (let ((a 6))
-    (if (and (< a 5) (> a 0)) "3 is comprised between 0 and 5" "3 is not comprised between 0 and 5"))
+> ( (let ((a 6))
+    (if (and (< a 5) (> a 0)) "3 is comprised between 0 and 5" "3 is not comprised between 0 and 5")) )
     "3 is not comprised between 0 and 5"
 ````
 
 
 Logical operations
 ````
-> (and true true)
+> ( (and true true) )
 true
-> (and true false)
+> ( (and true false) )
 false
-> (or true false)
+> ( (or true false) )
 true
-> (or true true)
+> ( (or true true) )
 true
-> (not true)
+> ( (not true) )
 false
-> (not false)
+> ( (not false) )
 true
 ````
 
 
 List operations
 ````
-> (car (list 1 2 3))
+> ( (car (list 1 2 3)) )
 1
-> (cdr (list 1 2 3))
+> ( (cdr (list 1 2 3)) )
 (2 3)
-> (cons 1 (list 2 3))
+> ( (cons 1 (list 2 3)) )
 (1 2 3)
-> (length (list 1 2 3 4))
+> ( (length (list 1 2 3 4)) )
 4 
-> (append (list 1 2) (list 3 4))
+> ( (append (list 1 2) (list 3 4)) )
 (1 2 3 4)
 ````
 
 Formatting
 ````
-> (format t "Hello World")
-> (let ((hello (lambda (nil)(nil) )))
-    (format t "Hello Coding Challenge World"))
+> ( (format t "Hello World") )
+> ( (let ((hello (lambda (nil)(nil) )))
+    (format t "Hello Coding Challenge World")) )
 "Hello Coding Challenge World"
-> (let ((doublen (lambda (n) (* n 2))))
-    ((format t "The double of 5 is %d" (doublen 5))))
+> ( (let ((doublen (lambda (n) (* n 2))))
+    ((format t "The double of 5 is %d" (doublen 5)))) )
 "The double of 5 is 10"
-> (let ((fact (lambda (n)
+> ( (let ((fact (lambda (n)
   (if (<= n 1)
     1
     (* n (fact (- n 1)))))))
-    (format t "Factorial of 5 is %d" (fact 5)))
+    (format t "Factorial of 5 is %d" (fact 5))) )
 "Factorial of 5 is 120"
 ````
-
 
 ### Run
 
