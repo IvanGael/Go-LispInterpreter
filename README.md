@@ -13,6 +13,18 @@ Simple implementation of lisp interpreter in Go
 - Support for reading and execution of a Lisp script from lisp file
 - A REPL: a Read-Eval-Print Loop (REPL) for interactive use.
 
+### Structure
+
+Separate of concerns into distinct components :
+- Lexer: a set of constant tokens that the lexer will recognize, such as FORMAT, PLUS, MINUS,... in order to handle different types of tokens of the interpreter. The Tokenize is the lexer component. It takes an input string and splits it into a sequence of tokens.
+
+- Parser: the Parse function is the parser component. It takes the sequence of tokens and constructs a Lisp expression tree (the AST).
+
+- AST: the various Lisp value types (LispValue, LispAtom, LispNumber, LispString, LispList, LispFunction) are the AST components. These types represent the different node types in the Lisp expression tree.
+
+- Main: the main function is responsible for the overall execution of the Lisp interpreter.
+It handles the file execution mode and the REPL mode. It uses the Tokenize, Parse, and Eval functions to process the input and evaluate the expressions. It also includes the readMultilineInput and evalMultipleExpressions functions to handle multi-line input and evaluation of multiple expressions.
+
 ### Example Interaction
 Arithmetic operations
 ````
@@ -119,12 +131,12 @@ Formatting
 
 - REPL mode
 ````
-go run main.go
+go run .
 ````
 
 - File execution mode
 ````
-go run main.go script.lisp
+go run . script.lisp
 ````
 
 ### Testing
