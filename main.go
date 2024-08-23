@@ -40,10 +40,10 @@ func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispVa
 
 func initEnvironment() Environment {
 	env := make(Environment)
-	env["t"] = &LispAtom{Value: "t"}
-	env["nil"] = &LispAtom{Value: "nil"}
-	env["true"] = &LispAtom{Value: "true"}
-	env["false"] = &LispAtom{Value: "false"}
+	env["t"] = &LispBoolean{Value: true}
+	env["nil"] = &LispNil{}
+	env["true"] = &LispBoolean{Value: true}
+	env["false"] = &LispBoolean{Value: false}
 	return env
 }
 

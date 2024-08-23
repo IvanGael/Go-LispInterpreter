@@ -33,8 +33,8 @@ type LispFloat struct {
 	Value float64
 }
 
-func (n *LispFloat) String() string {
-	return strconv.FormatFloat(n.Value, 'f', 2, 64)
+func (f *LispFloat) String() string {
+	return strconv.FormatFloat(f.Value, 'f', -1, 64)
 }
 
 // LispString represents a string value
@@ -77,4 +77,23 @@ func (f *LispFunction) String() string {
 		return strings.ToUpper(f.Name.Value)
 	}
 	return "FUNCTION"
+}
+
+// LispBoolean represents a boolean value
+type LispBoolean struct {
+	Value bool
+}
+
+func (b *LispBoolean) String() string {
+	if b.Value {
+		return "true"
+	}
+	return "false"
+}
+
+// LispNil represents a nil/null value
+type LispNil struct{}
+
+func (n *LispNil) String() string {
+	return "nil"
 }

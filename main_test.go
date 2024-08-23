@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -9,17 +10,57 @@ import (
 func TestTokenize(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected []string
+		expected []Token
 	}{
-		{"(define x 10)", []string{"(", "define", "x", "10", ")"}},
-		{"(+ 1 2)", []string{"(", "+", "1", "2", ")"}},
-		{"(print \"hello world\")", []string{"(", "print", "\"hello world\"", ")"}},
-		{"(if (> x 10) \"yes\" \"no\")", []string{"(", "if", "(", ">", "x", "10", ")", "\"yes\"", "\"no\"", ")"}},
+		{
+			"(define x 10)",
+			[]Token{
+				{Type: string(OPEN_BRACKET), Value: string(OPEN_BRACKET), Line: 1, Column: 1},
+				{Type: IDENTIFIER, Value: "define", Line: 1, Column: 2},
+				{Type: IDENTIFIER, Value: "x", Line: 1, Column: 9},
+				{Type: NUMBER, Value: "10", Line: 1, Column: 11},
+				{Type: string(CLOSE_BRACKET), Value: string(CLOSE_BRACKET), Line: 1, Column: 13},
+			},
+		},
+		{
+			"(+ 1 2)",
+			[]Token{
+				{Type: string(OPEN_BRACKET), Value: string(OPEN_BRACKET), Line: 1, Column: 1},
+				{Type: IDENTIFIER, Value: PLUS, Line: 1, Column: 2},
+				{Type: NUMBER, Value: "1", Line: 1, Column: 4},
+				{Type: NUMBER, Value: "2", Line: 1, Column: 6},
+				{Type: string(CLOSE_BRACKET), Value: string(CLOSE_BRACKET), Line: 1, Column: 7},
+			},
+		},
+		{
+			"(print \"hello world\")",
+			[]Token{
+				{Type: string(OPEN_BRACKET), Value: string(OPEN_BRACKET), Line: 1, Column: 1},
+				{Type: IDENTIFIER, Value: "print", Line: 1, Column: 2},
+				{Type: STRING, Value: "hello world", Line: 1, Column: 9},
+				{Type: string(CLOSE_BRACKET), Value: string(CLOSE_BRACKET), Line: 1, Column: 21},
+			},
+		},
+		{
+			"(if (> x 10) \"yes\" \"no\")",
+			[]Token{
+				{Type: string(OPEN_BRACKET), Value: string(OPEN_BRACKET), Line: 1, Column: 1},
+				{Type: IDENTIFIER, Value: IF, Line: 1, Column: 2},
+				{Type: string(OPEN_BRACKET), Value: string(OPEN_BRACKET), Line: 1, Column: 5},
+				{Type: IDENTIFIER, Value: GREATER_THAN, Line: 1, Column: 6},
+				{Type: IDENTIFIER, Value: "x", Line: 1, Column: 8},
+				{Type: NUMBER, Value: "10", Line: 1, Column: 10},
+				{Type: string(CLOSE_BRACKET), Value: string(CLOSE_BRACKET), Line: 1, Column: 12},
+				{Type: STRING, Value: "yes", Line: 1, Column: 15},
+				{Type: STRING, Value: "no", Line: 1, Column: 21},
+				{Type: string(CLOSE_BRACKET), Value: string(CLOSE_BRACKET), Line: 1, Column: 24},
+			},
+		},
 	}
 
 	for _, test := range tests {
 		result := Tokenize(test.input)
-		if !equal(result, test.expected) {
+		if !lispValueEqual(result, test.expected) {
 			t.Errorf("Tokenize(%q) = %v, want %v", test.input, result, test.expected)
 		}
 	}
@@ -28,12 +69,33 @@ func TestTokenize(t *testing.T) {
 // TestParse tests the Parse function
 func TestParse(t *testing.T) {
 	tests := []struct {
-		tokens   []string
+		tokens   []Token
 		expected LispValue
 	}{
-		{[]string{"10"}, &LispNumber{Value: 10}},
-		{[]string{"\"hello\""}, &LispString{Value: "hello"}},
-		{[]string{"(", "+", "1", "2", ")"}, &LispList{Elements: []LispValue{&LispAtom{Value: "+"}, &LispNumber{Value: 1}, &LispNumber{Value: 2}}}},
+		{
+			[]Token{{Type: NUMBER, Value: "10", Line: 1, Column: 1}},
+			&LispNumber{Value: 10},
+		},
+		{
+			[]Token{{Type: STRING, Value: "hello", Line: 1, Column: 1}},
+			&LispString{Value: "hello"},
+		},
+		{
+			[]Token{
+				{Type: string(OPEN_BRACKET), Value: string(OPEN_BRACKET), Line: 1, Column: 1},
+				{Type: IDENTIFIER, Value: PLUS, Line: 1, Column: 2},
+				{Type: NUMBER, Value: "1", Line: 1, Column: 4},
+				{Type: NUMBER, Value: "2", Line: 1, Column: 6},
+				{Type: string(CLOSE_BRACKET), Value: string(CLOSE_BRACKET), Line: 1, Column: 7},
+			},
+			&LispList{
+				Elements: []LispValue{
+					&LispAtom{Value: PLUS},
+					&LispNumber{Value: 1},
+					&LispNumber{Value: 2},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -521,41 +583,6 @@ func TestBuiltinAppend(t *testing.T) {
 
 // Helper functions for tests
 
-func equal(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func lispValueEqual(a, b LispValue) bool {
-	switch x := a.(type) {
-	case *LispNumber:
-		y, ok := b.(*LispNumber)
-		return ok && x.Value == y.Value
-	case *LispString:
-		y, ok := b.(*LispString)
-		return ok && x.Value == y.Value
-	case *LispAtom:
-		y, ok := b.(*LispAtom)
-		return ok && x.Value == y.Value
-	case *LispList:
-		y, ok := b.(*LispList)
-		if !ok || len(x.Elements) != len(y.Elements) {
-			return false
-		}
-		for i := range x.Elements {
-			if !lispValueEqual(x.Elements[i], y.Elements[i]) {
-				return false
-			}
-		}
-		return true
-	default:
-		return false
-	}
+func lispValueEqual(a, b any) bool {
+	return reflect.DeepEqual(a, b)
 }

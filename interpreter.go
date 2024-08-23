@@ -2,10 +2,23 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"strings"
 )
 
 // Environment represents the mapping of symbols to their values
 type Environment map[string]LispValue
+
+// LispError represents an error with line and column information
+type LispError struct {
+	Message string
+	Line    int
+	Column  int
+}
+
+func (e *LispError) Error() string {
+	return fmt.Sprintf("Error at line %d, column %d: %s", e.Line, e.Column, e.Message)
+}
 
 // Eval evaluates a Lisp expression in the given environment
 func Eval(env Environment, expr LispValue) (LispValue, error) {
@@ -14,10 +27,8 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 		if val, ok := env[v.Value]; ok {
 			return val, nil
 		}
-		return nil, fmt.Errorf("unbound symbol: %s", v.Value)
-	case *LispNumber:
-		return v, nil
-	case *LispString:
+		return nil, &LispError{Message: fmt.Sprintf("unbound symbol: %s", v.Value), Line: 0, Column: 0}
+	case *LispNumber, *LispFloat, *LispString, *LispBoolean, *LispNil:
 		return v, nil
 	case *LispList:
 		if len(v.Elements) == 0 {
@@ -25,7 +36,7 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 		}
 		fn, ok := v.Elements[0].(*LispAtom)
 		if !ok {
-			return nil, fmt.Errorf("invalid function call: %v", v.Elements[0])
+			return nil, &LispError{Message: fmt.Sprintf("invalid function call: %v", v.Elements[0]), Line: 0, Column: 0}
 		}
 		args := v.Elements[1:]
 		switch fn.Value {
@@ -39,6 +50,20 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 			return builtinMul(env, args)
 		case SLASH:
 			return builtinDiv(env, args)
+		case PERCENT:
+			return builtinMod(env, args)
+		case POW:
+			return builtinPow(env, args)
+		case SQRT:
+			return builtinSqrt(env, args)
+		case CONCAT:
+			return builtinConcat(env, args)
+		case SUBSTRING:
+			return builtinSubstring(env, args)
+		case IS_NUMBER:
+			return builtinIsNumber(env, args)
+		case IS_STRING:
+			return builtinIsString(env, args)
 		case LESS_THAN:
 			return builtinLt(env, args)
 		case LESS_OR_EQUAL_THAN:
@@ -79,7 +104,7 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 			return callFunction(env, fn.Value, args)
 		}
 	default:
-		return nil, fmt.Errorf("unknown expression type: %T", v)
+		return nil, &LispError{Message: fmt.Sprintf("unknown expression type: %T", v), Line: 0, Column: 0}
 	}
 }
 
@@ -88,10 +113,16 @@ func lispValueToGoValue(value LispValue) interface{} {
 	switch v := value.(type) {
 	case *LispNumber:
 		return v.Value
+	case *LispFloat:
+		return v.Value
 	case *LispString:
 		return v.Value
 	case *LispAtom:
 		return v.Value
+	case *LispBoolean:
+		return v.Value
+	case *LispNil:
+		return nil
 	default:
 		return v
 	}
@@ -132,19 +163,25 @@ func builtinFormat(env Environment, args []LispValue) (LispValue, error) {
 
 // builtinAdd is built-in implementation of addition operation
 func builtinAdd(env Environment, args []LispValue) (LispValue, error) {
-	sum := 0
+	var sum float64
 	for _, arg := range args {
 		val, err := Eval(env, arg)
 		if err != nil {
 			return nil, err
 		}
-		number, ok := val.(*LispNumber)
-		if !ok {
-			return nil, fmt.Errorf("invalid argument to +: %v", val)
+		switch v := val.(type) {
+		case *LispNumber:
+			sum += float64(v.Value)
+		case *LispFloat:
+			sum += v.Value
+		default:
+			return nil, &LispError{Message: fmt.Sprintf("invalid argument to +: %v", val), Line: 0, Column: 0}
 		}
-		sum += number.Value
 	}
-	return &LispNumber{Value: sum}, nil
+	if float64(int(sum)) == sum {
+		return &LispNumber{Value: int(sum)}, nil
+	}
+	return &LispFloat{Value: sum}, nil
 }
 
 // builtinSub is built-in implementation of subtraction operation
@@ -228,6 +265,174 @@ func builtinDiv(env Environment, args []LispValue) (LispValue, error) {
 	}
 
 	return &LispNumber{Value: quot}, nil
+}
+
+// builtinMod is built-in implementation of modulo operation
+func builtinMod(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, &LispError{Message: "wrong number of arguments to %", Line: 0, Column: 0}
+	}
+	val1, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	val2, err := Eval(env, args[1])
+	if err != nil {
+		return nil, err
+	}
+	num1, ok1 := val1.(*LispNumber)
+	num2, ok2 := val2.(*LispNumber)
+	if !ok1 || !ok2 {
+		return nil, &LispError{Message: "invalid arguments to %", Line: 0, Column: 0}
+	}
+	if num2.Value == 0 {
+		return nil, &LispError{Message: "division by zero", Line: 0, Column: 0}
+	}
+	return &LispNumber{Value: num1.Value % num2.Value}, nil
+}
+
+// builtinPow is built-in implementation of pow operation
+func builtinPow(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 2 {
+		return nil, &LispError{Message: "wrong number of arguments to pow", Line: 0, Column: 0}
+	}
+	base, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	exp, err := Eval(env, args[1])
+	if err != nil {
+		return nil, err
+	}
+	baseVal, expVal := 0.0, 0.0
+	switch v := base.(type) {
+	case *LispNumber:
+		baseVal = float64(v.Value)
+	case *LispFloat:
+		baseVal = v.Value
+	default:
+		return nil, &LispError{Message: "invalid base argument to pow", Line: 0, Column: 0}
+	}
+	switch v := exp.(type) {
+	case *LispNumber:
+		expVal = float64(v.Value)
+	case *LispFloat:
+		expVal = v.Value
+	default:
+		return nil, &LispError{Message: "invalid exponent argument to pow", Line: 0, Column: 0}
+	}
+	result := math.Pow(baseVal, expVal)
+	if float64(int(result)) == result {
+		return &LispNumber{Value: int(result)}, nil
+	}
+	return &LispFloat{Value: result}, nil
+}
+
+// builtinSqrt is built-in implementation of sqrt operation
+func builtinSqrt(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, &LispError{Message: "wrong number of arguments to sqrt", Line: 0, Column: 0}
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	var num float64
+	switch v := val.(type) {
+	case *LispNumber:
+		num = float64(v.Value)
+	case *LispFloat:
+		num = v.Value
+	default:
+		return nil, &LispError{Message: "invalid argument to sqrt", Line: 0, Column: 0}
+	}
+	if num < 0 {
+		return nil, &LispError{Message: "cannot take square root of negative number", Line: 0, Column: 0}
+	}
+	result := math.Sqrt(num)
+	if float64(int(result)) == result {
+		return &LispNumber{Value: int(result)}, nil
+	}
+	return &LispFloat{Value: result}, nil
+}
+
+// builtinConcat is built-in implementation of concat operation
+func builtinConcat(env Environment, args []LispValue) (LispValue, error) {
+	var result strings.Builder
+	for _, arg := range args {
+		val, err := Eval(env, arg)
+		if err != nil {
+			return nil, err
+		}
+		str, ok := val.(*LispString)
+		if !ok {
+			return nil, &LispError{Message: "invalid argument to concat", Line: 0, Column: 0}
+		}
+		result.WriteString(str.Value)
+	}
+	return &LispString{Value: result.String()}, nil
+}
+
+// builtinSubstring is built-in implementation of substring operation
+func builtinSubstring(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 3 {
+		return nil, &LispError{Message: "wrong number of arguments to substring", Line: 0, Column: 0}
+	}
+	str, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	start, err := Eval(env, args[1])
+	if err != nil {
+		return nil, err
+	}
+	end, err := Eval(env, args[2])
+	if err != nil {
+		return nil, err
+	}
+	strVal, ok := str.(*LispString)
+	if !ok {
+		return nil, &LispError{Message: "first argument to substring must be a string", Line: 0, Column: 0}
+	}
+	startVal, ok := start.(*LispNumber)
+	if !ok {
+		return nil, &LispError{Message: "second argument to substring must be a number", Line: 0, Column: 0}
+	}
+	endVal, ok := end.(*LispNumber)
+	if !ok {
+		return nil, &LispError{Message: "third argument to substring must be a number", Line: 0, Column: 0}
+	}
+	if startVal.Value < 0 || endVal.Value > len(strVal.Value) || startVal.Value > endVal.Value {
+		return nil, &LispError{Message: "invalid substring range", Line: 0, Column: 0}
+	}
+	return &LispString{Value: strVal.Value[startVal.Value:endVal.Value]}, nil
+}
+
+// builtinIsNumber is built-in implementation of isNumber operation
+func builtinIsNumber(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, &LispError{Message: "wrong number of arguments to is-number", Line: 0, Column: 0}
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	_, isNum := val.(*LispNumber)
+	_, isFloat := val.(*LispFloat)
+	return &LispBoolean{Value: isNum || isFloat}, nil
+}
+
+// builtinIsString is built-in implementation of isString operation
+func builtinIsString(env Environment, args []LispValue) (LispValue, error) {
+	if len(args) != 1 {
+		return nil, &LispError{Message: "wrong number of arguments to is-string", Line: 0, Column: 0}
+	}
+	val, err := Eval(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+	_, isString := val.(*LispString)
+	return &LispBoolean{Value: isString}, nil
 }
 
 // builtinLt is built-in implementation of less than condition
@@ -448,11 +653,11 @@ func builtinAnd(env Environment, args []LispValue) (LispValue, error) {
 		if err != nil {
 			return nil, err
 		}
-		if atom, ok := val.(*LispAtom); ok && atom.Value == "false" {
-			return &LispAtom{Value: "false"}, nil
+		if boolean, ok := val.(*LispBoolean); ok && !boolean.Value {
+			return &LispBoolean{Value: false}, nil
 		}
 	}
-	return &LispAtom{Value: "true"}, nil
+	return &LispBoolean{Value: true}, nil
 }
 
 // builtinOr is built-in implementation of or logical operation
@@ -462,26 +667,26 @@ func builtinOr(env Environment, args []LispValue) (LispValue, error) {
 		if err != nil {
 			return nil, err
 		}
-		if atom, ok := val.(*LispAtom); ok && atom.Value == "true" {
-			return &LispAtom{Value: "true"}, nil
+		if boolean, ok := val.(*LispBoolean); ok && boolean.Value {
+			return &LispBoolean{Value: true}, nil
 		}
 	}
-	return &LispAtom{Value: "false"}, nil
+	return &LispBoolean{Value: false}, nil
 }
 
 // builtinNot is built-in implementation of not logical operation
 func builtinNot(env Environment, args []LispValue) (LispValue, error) {
 	if len(args) != 1 {
-		return nil, fmt.Errorf("wrong number of arguments to not")
+		return nil, &LispError{Message: "wrong number of arguments to not", Line: 0, Column: 0}
 	}
 	val, err := Eval(env, args[0])
 	if err != nil {
 		return nil, err
 	}
-	if atom, ok := val.(*LispAtom); ok && atom.Value == "false" {
-		return &LispAtom{Value: "true"}, nil
+	if boolean, ok := val.(*LispBoolean); ok {
+		return &LispBoolean{Value: !boolean.Value}, nil
 	}
-	return &LispAtom{Value: "false"}, nil
+	return &LispBoolean{Value: false}, nil
 }
 
 // builtinList is built-in implementation of list definition
