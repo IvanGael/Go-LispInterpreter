@@ -18,7 +18,7 @@ func readMultilineInput(scanner *bufio.Scanner) string {
 		line := scanner.Text()
 		input.WriteString(line + "\n")
 
-		parenCount += strings.Count(line, "(") - strings.Count(line, ")")
+		parenCount += strings.Count(line, string(OPEN_BRACKET)) - strings.Count(line, string(CLOSE_BRACKET))
 
 		if parenCount == 0 && input.Len() > 0 {
 			return input.String()
