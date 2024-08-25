@@ -84,8 +84,6 @@ func main() {
 	} else {
 		// REPL mode
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Println(" -----+ GoLisp! Type your expressions below. +----- ")
-		fmt.Println(" ")
 		for {
 			fmt.Print("cclisp> ")
 			input := readMultilineInput(scanner)

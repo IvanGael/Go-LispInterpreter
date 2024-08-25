@@ -160,6 +160,7 @@ func TestBuiltinAdd(t *testing.T) {
 	}{
 		{[]LispValue{&LispNumber{Value: 1}, &LispNumber{Value: 2}}, &LispNumber{Value: 3}},
 		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 20}}, &LispNumber{Value: 30}},
+		{[]LispValue{&LispFloat{Value: 2.5}, &LispNumber{Value: 12}}, &LispFloat{Value: 14.5}},
 	}
 
 	for _, test := range tests {
@@ -180,6 +181,7 @@ func TestBuiltinSub(t *testing.T) {
 	}{
 		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 5}}, &LispNumber{Value: 5}},
 		{[]LispValue{&LispNumber{Value: 20}, &LispNumber{Value: 10}, &LispNumber{Value: 5}}, &LispNumber{Value: 5}},
+		{[]LispValue{&LispNumber{Value: 3}, &LispFloat{Value: 6.5}}, &LispFloat{Value: -3.5}},
 	}
 
 	for _, test := range tests {
@@ -200,6 +202,7 @@ func TestBuiltinMul(t *testing.T) {
 	}{
 		{[]LispValue{&LispNumber{Value: 2}, &LispNumber{Value: 3}}, &LispNumber{Value: 6}},
 		{[]LispValue{&LispNumber{Value: 4}, &LispNumber{Value: 5}}, &LispNumber{Value: 20}},
+		{[]LispValue{&LispFloat{Value: -2.5}, &LispFloat{Value: -8}}, &LispNumber{Value: 20}},
 	}
 
 	for _, test := range tests {
@@ -222,12 +225,154 @@ func TestBuiltinDiv(t *testing.T) {
 		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 2}}, &LispNumber{Value: 5}, ""},
 		{[]LispValue{&LispNumber{Value: 20}, &LispNumber{Value: 5}}, &LispNumber{Value: 4}, ""},
 		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 0}}, nil, "division by zero"},
+		{[]LispValue{&LispFloat{Value: -10}, &LispFloat{Value: -2}}, &LispNumber{Value: 5}, ""},
 	}
 
 	for _, test := range tests {
 		result, err := builtinDiv(env, test.args)
 		if (err != nil && err.Error() != test.err) || (err == nil && !lispValueEqual(result, test.expected)) {
 			t.Errorf("builtinDiv(%v) = %v, %v, want %v, %v", test.args, result, err, test.expected, test.err)
+		}
+	}
+}
+
+// TestBuiltinMod tests the builtinMod function
+func TestBuiltinMod(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 2}}, &LispNumber{Value: 0}},
+		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 6}}, &LispNumber{Value: 4}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinMod(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinMod(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinMod tests the builtinPow function
+func TestBuiltinPow(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 10}, &LispNumber{Value: 2}}, &LispNumber{Value: 100}},
+		{[]LispValue{&LispNumber{Value: 8}, &LispNumber{Value: 3}}, &LispNumber{Value: 512}},
+		{[]LispValue{&LispNumber{Value: -2}, &LispNumber{Value: 4}}, &LispNumber{Value: 16}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinPow(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinPow(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinSqrt tests the builtinSqrt function
+func TestBuiltinSqrt(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 64}}, &LispNumber{Value: 8}},
+		{[]LispValue{&LispNumber{Value: 4}}, &LispNumber{Value: 2}},
+		{[]LispValue{&LispFloat{Value: 2}}, &LispFloat{Value: 1.4142135623730951}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinSqrt(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinSqrt(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinConcat tests the builtinConcat function
+func TestBuiltinConcat(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "Hello "}, &LispString{Value: "World!"}}, &LispString{Value: "Hello World!"}},
+		{[]LispValue{&LispString{Value: "One "}, &LispString{Value: "Piece"}}, &LispString{Value: "One Piece"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinConcat(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinConcat(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinSubstring tests the builtinSubstring function
+func TestBuiltinSubstring(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "Hello World!"}, &LispNumber{Value: 0}, &LispNumber{Value: 5}}, &LispString{Value: "Hello"}},
+		{[]LispValue{&LispString{Value: "Hello World!"}, &LispNumber{Value: 6}, &LispNumber{Value: 12}}, &LispString{Value: "World!"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinSubstring(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinSubstring(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinIsNumber tests the builtinIsNumber function
+func TestBuiltinIsNumber(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispNumber{Value: 12}}, &LispBoolean{Value: true}},
+		{[]LispValue{&LispFloat{Value: 12.5}}, &LispBoolean{Value: true}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinIsNumber(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinIsNumber(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinIsString tests the builtinIsString function
+func TestBuiltinIsString(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "Hello"}}, &LispBoolean{Value: true}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinIsString(env, test.args)
+		if err != nil || !lispValueEqual(result, test.expected) {
+			t.Errorf("builtinIsString(%v) = %v, %v, want %v", test.args, result, err, test.expected)
 		}
 	}
 }

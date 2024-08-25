@@ -193,40 +193,65 @@ func builtinSub(env Environment, args []LispValue) (LispValue, error) {
 	if err != nil {
 		return nil, err
 	}
-	number, ok := val.(*LispNumber)
-	if !ok {
-		return nil, fmt.Errorf("invalid argument to -: %v", val)
+	var diff float64
+	switch v := val.(type) {
+	case *LispNumber:
+		_, ok := val.(*LispNumber)
+		if !ok {
+			return nil, fmt.Errorf("invalid argument to -: %v", val)
+		}
+		diff = float64(v.Value)
+	case *LispFloat:
+		_, ok := val.(*LispFloat)
+		if !ok {
+			return nil, fmt.Errorf("invalid argument to -: %v", val)
+		}
+		diff = float64(v.Value)
+	default:
+		return nil, &LispError{Message: fmt.Sprintf("invalid argument to +: %v", val), Line: 0, Column: 0}
 	}
-	diff := number.Value
 	for _, arg := range args[1:] {
 		val, err := Eval(env, arg)
 		if err != nil {
 			return nil, err
 		}
-		number, ok := val.(*LispNumber)
-		if !ok {
-			return nil, fmt.Errorf("invalid argument to -: %v", val)
+		switch v := val.(type) {
+		case *LispNumber:
+			diff -= float64(v.Value)
+		case *LispFloat:
+			diff -= v.Value
+		default:
+			return nil, &LispError{Message: fmt.Sprintf("invalid argument to +: %v", val), Line: 0, Column: 0}
 		}
-		diff -= number.Value
 	}
-	return &LispNumber{Value: diff}, nil
+	if float64(int(diff)) == diff {
+		return &LispNumber{Value: int(diff)}, nil
+	}
+	return &LispFloat{Value: diff}, nil
 }
 
 // builtinMul is built-in implementation of multiplication operation
 func builtinMul(env Environment, args []LispValue) (LispValue, error) {
-	prod := 1
+	var prod float64
+	prod = 1
 	for _, arg := range args {
 		val, err := Eval(env, arg)
 		if err != nil {
 			return nil, err
 		}
-		number, ok := val.(*LispNumber)
-		if !ok {
-			return nil, fmt.Errorf("invalid argument to *: %v", val)
+		switch v := val.(type) {
+		case *LispNumber:
+			prod *= float64(v.Value)
+		case *LispFloat:
+			prod *= v.Value
+		default:
+			return nil, &LispError{Message: fmt.Sprintf("invalid argument to +: %v", val), Line: 0, Column: 0}
 		}
-		prod *= number.Value
 	}
-	return &LispNumber{Value: prod}, nil
+	if float64(int(prod)) == prod {
+		return &LispNumber{Value: int(prod)}, nil
+	}
+	return &LispFloat{Value: prod}, nil
 }
 
 // builtinDiv is built-in implementation of division operation
@@ -240,31 +265,49 @@ func builtinDiv(env Environment, args []LispValue) (LispValue, error) {
 		return nil, err
 	}
 
-	number, ok := val.(*LispNumber)
-	if !ok {
-		return nil, fmt.Errorf("invalid argument to /: %v", val)
+	var quot float64
+	switch v := val.(type) {
+	case *LispNumber:
+		_, ok := val.(*LispNumber)
+		if !ok {
+			return nil, fmt.Errorf("invalid argument to -: %v", val)
+		}
+		quot = float64(v.Value)
+	case *LispFloat:
+		_, ok := val.(*LispFloat)
+		if !ok {
+			return nil, fmt.Errorf("invalid argument to -: %v", val)
+		}
+		quot = float64(v.Value)
+	default:
+		return nil, &LispError{Message: fmt.Sprintf("invalid argument to +: %v", val), Line: 0, Column: 0}
 	}
 
-	quot := number.Value
 	for _, arg := range args[1:] {
 		val, err := Eval(env, arg)
 		if err != nil {
 			return nil, err
 		}
 
-		number, ok := val.(*LispNumber)
-		if !ok {
-			return nil, fmt.Errorf("invalid argument to /: %v", val)
+		switch v := val.(type) {
+		case *LispNumber:
+			if v.Value == 0 {
+				return nil, fmt.Errorf("division by zero")
+			}
+			quot /= float64(v.Value)
+		case *LispFloat:
+			if v.Value == 0 {
+				return nil, fmt.Errorf("division by zero")
+			}
+			quot /= v.Value
+		default:
+			return nil, &LispError{Message: fmt.Sprintf("invalid argument to +: %v", val), Line: 0, Column: 0}
 		}
-
-		if number.Value == 0 {
-			return nil, fmt.Errorf("division by zero")
-		}
-
-		quot /= number.Value
 	}
-
-	return &LispNumber{Value: quot}, nil
+	if float64(int(quot)) == quot {
+		return &LispNumber{Value: int(quot)}, nil
+	}
+	return &LispFloat{Value: quot}, nil
 }
 
 // builtinMod is built-in implementation of modulo operation
