@@ -150,6 +150,46 @@ func TestBuiltinFormat(t *testing.T) {
 	}
 }
 
+// TestBuiltinRead tests the builtinRead function
+func TestBuiltinRead(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "Hello"}}, &LispString{Value: "Hello"}},
+		{[]LispValue{&LispString{Value: "Factorial of 5 is 120"}}, &LispString{Value: "Factorial of 5 is 120"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinRead(env, test.args)
+		if err != nil {
+			t.Errorf("builtinRead(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
+// TestBuiltinPrint tests the builtinPrint function
+func TestBuiltinPrint(t *testing.T) {
+	env := Environment{}
+
+	tests := []struct {
+		args     []LispValue
+		expected LispValue
+	}{
+		{[]LispValue{&LispString{Value: "Hello"}}, &LispString{Value: "Hello"}},
+		{[]LispValue{&LispString{Value: "Factorial of 5 is 120"}}, &LispString{Value: "Factorial of 5 is 120"}},
+	}
+
+	for _, test := range tests {
+		result, err := builtinPrint(env, test.args)
+		if err != nil {
+			t.Errorf("builtinPrint(%v) = %v, %v, want %v", test.args, result, err, test.expected)
+		}
+	}
+}
+
 // TestBuiltinAdd tests the builtinAdd function
 func TestBuiltinAdd(t *testing.T) {
 	env := Environment{}
