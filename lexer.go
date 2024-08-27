@@ -38,6 +38,8 @@ const (
 	SUBSTRING             = "substring"
 	IS_NUMBER             = "isNumber"
 	IS_STRING             = "isString"
+	READ                  = "read"
+	PRINT                 = "print"
 	OPEN_BRACKET          = '('
 	CLOSE_BRACKET         = ')'
 	DOUBLE_QUOTE          = '"'

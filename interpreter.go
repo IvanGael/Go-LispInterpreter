@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math"
+	"os"
 	"strings"
 )
 
@@ -42,6 +44,10 @@ func Eval(env Environment, expr LispValue) (LispValue, error) {
 		switch fn.Value {
 		case FORMAT:
 			return builtinFormat(env, args)
+		case READ:
+			return builtinRead(env, args)
+		case PRINT:
+			return builtinPrint(env, args)
 		case PLUS:
 			return builtinAdd(env, args)
 		case MINUS:
@@ -159,6 +165,32 @@ func builtinFormat(env Environment, args []LispValue) (LispValue, error) {
 	formattedStr := fmt.Sprintf(formatStr.Value, sprintfArgs...)
 
 	return &LispString{Value: formattedStr}, nil
+}
+
+// builtinRead reads input from the user
+func builtinRead(_ Environment, args []LispValue) (LispValue, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+	if len(args) > 0 {
+		for _, arg := range args {
+			fmt.Print(arg.String())
+		}
+	}
+	scanner.Scan()
+	input := scanner.Text()
+	return &LispString{Value: input}, nil
+}
+
+// builtinPrint prints a Lisp value to the console
+func builtinPrint(env Environment, args []LispValue) (LispValue, error) {
+	for _, arg := range args {
+		val, err := Eval(env, arg)
+		if err != nil {
+			return nil, err
+		} else {
+			return val, nil
+		}
+	}
+	return &LispString{}, nil
 }
 
 // builtinAdd is built-in implementation of addition operation
