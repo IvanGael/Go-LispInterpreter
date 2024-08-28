@@ -76,7 +76,7 @@ func (f *LispFunction) String() string {
 	if f.Name != nil {
 		return strings.ToUpper(f.Name.Value)
 	}
-	return "FUNCTION"
+	return FUNCTION
 }
 
 // LispBoolean represents a boolean value
@@ -86,14 +86,14 @@ type LispBoolean struct {
 
 func (b *LispBoolean) String() string {
 	if b.Value {
-		return "true"
+		return TRUE
 	}
-	return "false"
+	return FALSE
 }
 
 // LispNil represents a nil/null value
 type LispNil struct{}
 
 func (n *LispNil) String() string {
-	return "nil"
+	return NIL
 }

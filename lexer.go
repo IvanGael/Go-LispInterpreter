@@ -46,13 +46,18 @@ const (
 	EMPTY_STRING          = " "
 	DOUBLE_ANTI_SLASH     = '\\'
 	ANTI_SLASH_N          = '\n'
+	DOT                   = "."
+	TRUE                  = "true"
+	FALSE                 = "false"
+	NIL                   = "nil"
+	T                     = "t"
 	NUMBER                = "NUMBER"
 	FLOAT                 = "FLOAT"
 	STRING                = "STRING"
 	EOF                   = "EOF"
 	IDENTIFIER            = "IDENTIFIER"
 	BOOLEAN               = "BOOLEAN"
-	NIL                   = "NIL"
+	FUNCTION              = "FUNCTION"
 )
 
 type Token struct {
@@ -129,13 +134,13 @@ func Tokenize(input string) []Token {
 func createToken(value string, line, column int) Token {
 	tokenType := IDENTIFIER
 	switch value {
-	case "true", "false":
+	case TRUE, FALSE:
 		tokenType = BOOLEAN
-	case "nil":
+	case NIL:
 		tokenType = NIL
 	default:
 		if _, err := strconv.ParseFloat(value, 64); err == nil {
-			if strings.Contains(value, ".") {
+			if strings.Contains(value, DOT) {
 				tokenType = FLOAT
 			} else {
 				tokenType = NUMBER

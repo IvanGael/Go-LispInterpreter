@@ -1,30 +1,30 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
-	"strings"
+
+	"github.com/c-bata/go-prompt"
 )
 
-func readMultilineInput(scanner *bufio.Scanner) string {
-	var input strings.Builder
-	parenCount := 0
+// func readMultilineInput(scanner *bufio.Scanner) string {
+// 	var input strings.Builder
+// 	parenCount := 0
 
-	for {
-		if !scanner.Scan() {
-			return input.String()
-		}
-		line := scanner.Text()
-		input.WriteString(line + "\n")
+// 	for {
+// 		if !scanner.Scan() {
+// 			return input.String()
+// 		}
+// 		line := scanner.Text()
+// 		input.WriteString(line + "\n")
 
-		parenCount += strings.Count(line, string(OPEN_BRACKET)) - strings.Count(line, string(CLOSE_BRACKET))
+// 		parenCount += strings.Count(line, string(OPEN_BRACKET)) - strings.Count(line, string(CLOSE_BRACKET))
 
-		if parenCount == 0 && input.Len() > 0 {
-			return input.String()
-		}
-	}
-}
+// 		if parenCount == 0 && input.Len() > 0 {
+// 			return input.String()
+// 		}
+// 	}
+// }
 
 func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispValue, error) {
 	results := make([]LispValue, 0, len(expressions))
@@ -38,12 +38,56 @@ func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispVa
 	return results, nil
 }
 
+var env Environment
+
+func completer(d prompt.Document) []prompt.Suggest {
+	s := []prompt.Suggest{}
+
+	for key, value := range builtins {
+		s = append(s, prompt.Suggest{Text: key, Description: value})
+	}
+
+	// Add defined symbols from the environment
+	for symbol := range env {
+		s = append(s, prompt.Suggest{Text: symbol, Description: "Defined symbol"})
+	}
+
+	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
+}
+
+func executor(input string) {
+	tokens := Tokenize(input)
+	expr, _, err := Parse(tokens)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	if list, ok := expr.(*LispList); ok {
+		results, err := evalMultipleExpressions(env, list.Elements)
+		if err != nil {
+			fmt.Println("Error:", err)
+		} else {
+			for _, result := range results {
+				fmt.Println(result)
+			}
+		}
+	} else {
+		result, err := Eval(env, expr)
+		if err != nil {
+			fmt.Println("Error:", err)
+		} else {
+			fmt.Println(result)
+		}
+	}
+}
+
 func initEnvironment() Environment {
 	env := make(Environment)
-	env["t"] = &LispBoolean{Value: true}
-	env["nil"] = &LispNil{}
-	env["true"] = &LispBoolean{Value: true}
-	env["false"] = &LispBoolean{Value: false}
+	env[T] = &LispBoolean{Value: true}
+	env[NIL] = &LispNil{}
+	env[TRUE] = &LispBoolean{Value: true}
+	env[FALSE] = &LispBoolean{Value: false}
 	return env
 }
 
@@ -58,7 +102,8 @@ func readFile(filepath string) (string, error) {
 
 // main
 func main() {
-	env := initEnvironment()
+	env = initEnvironment()
+
 	if len(os.Args) > 1 {
 		// File execution mode
 		filepath := os.Args[1]
@@ -82,40 +127,13 @@ func main() {
 			fmt.Println(result)
 		}
 	} else {
-		// REPL mode
-		scanner := bufio.NewScanner(os.Stdin)
-		for {
-			fmt.Print("cclisp> ")
-			input := readMultilineInput(scanner)
-			if input == "" {
-				break
-			}
-			tokens := Tokenize(input)
-			expr, _, err := Parse(tokens)
-			if err != nil {
-				fmt.Println("Error:", err)
-				continue
-			}
-			if list, ok := expr.(*LispList); ok {
-				results, err := evalMultipleExpressions(env, list.Elements)
-				if err != nil {
-					fmt.Println("Error:", err)
-				} else {
-					for _, result := range results {
-						fmt.Println(result)
-					}
-				}
-			} else {
-				result, err := Eval(env, expr)
-				if err != nil {
-					fmt.Println("Error:", err)
-				} else {
-					fmt.Println(result)
-				}
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Println("Error reading input:", err)
-		}
+		// REPL mode with autocompletion
+		p := prompt.New(
+			executor,
+			completer,
+			prompt.OptionPrefix("cclisp> "),
+			prompt.OptionTitle("CCLisp REPL"),
+		)
+		p.Run()
 	}
 }
