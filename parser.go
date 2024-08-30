@@ -39,7 +39,7 @@ func Parse(tokens []Token) (LispValue, []Token, error) {
 		num, _ := strconv.ParseFloat(token.Value, 64)
 		return &LispFloat{Value: num}, tokens, nil
 	case BOOLEAN:
-		return &LispBoolean{Value: token.Value == "true"}, tokens, nil
+		return &LispBoolean{Value: token.Value == TRUE}, tokens, nil
 	case NIL:
 		return &LispNil{}, tokens, nil
 	default:
