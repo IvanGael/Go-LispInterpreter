@@ -7,25 +7,6 @@ import (
 	"github.com/c-bata/go-prompt"
 )
 
-// func readMultilineInput(scanner *bufio.Scanner) string {
-// 	var input strings.Builder
-// 	parenCount := 0
-
-// 	for {
-// 		if !scanner.Scan() {
-// 			return input.String()
-// 		}
-// 		line := scanner.Text()
-// 		input.WriteString(line + "\n")
-
-// 		parenCount += strings.Count(line, string(OPEN_BRACKET)) - strings.Count(line, string(CLOSE_BRACKET))
-
-// 		if parenCount == 0 && input.Len() > 0 {
-// 			return input.String()
-// 		}
-// 	}
-// }
-
 func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispValue, error) {
 	results := make([]LispValue, 0, len(expressions))
 	for _, expr := range expressions {
