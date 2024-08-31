@@ -37,13 +37,18 @@ func completer(d prompt.Document) []prompt.Suggest {
 }
 
 func executor(input string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered from panic:", r)
+		}
+	}()
+
 	tokens := Tokenize(input)
 	expr, _, err := Parse(tokens)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-
 	if list, ok := expr.(*LispList); ok {
 		results, err := evalMultipleExpressions(env, list.Elements)
 		if err != nil {
@@ -84,7 +89,6 @@ func readFile(filepath string) (string, error) {
 // main
 func main() {
 	env = initEnvironment()
-
 	if len(os.Args) > 1 {
 		// File execution mode
 		filepath := os.Args[1]
@@ -108,9 +112,16 @@ func main() {
 			fmt.Println(result)
 		}
 	} else {
-		// REPL mode with autocompletion
+		// REPL mode with autocompletion and error recovery
 		p := prompt.New(
-			executor,
+			func(input string) {
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Println("Recovered from panic:", r)
+					}
+				}()
+				executor(input)
+			},
 			completer,
 			prompt.OptionPrefix("cclisp> "),
 			prompt.OptionTitle("CCLisp REPL"),
