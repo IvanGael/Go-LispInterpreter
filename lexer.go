@@ -69,8 +69,9 @@ type Token struct {
 
 // Tokenize splits the input string into tokens
 func Tokenize(input string) []Token {
-	var tokens []Token
+	tokens := make([]Token, 0, len(input)/2)
 	var token strings.Builder
+	token.Grow(len(input) / 4)
 	inString := false
 	escapeNext := false
 	line, column := 1, 1
@@ -148,4 +149,14 @@ func createToken(value string, line, column int) Token {
 		}
 	}
 	return Token{Type: tokenType, Value: value, Line: line, Column: column}
+}
+
+// convert tokens to a string for caching
+func tokensToString(tokens []Token) string {
+	var sb strings.Builder
+	for _, token := range tokens {
+		sb.WriteString(token.Type)
+		sb.WriteString(token.Value)
+	}
+	return sb.String()
 }

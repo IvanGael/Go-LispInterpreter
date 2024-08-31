@@ -116,9 +116,6 @@ Formatting
 > ( (let ((hello (lambda (nil)(nil) )))
     (format t "Hello Coding Challenge World")) )
 "Hello Coding Challenge World"
-> ( (let ((doublen (lambda (n) (* n 2))))
-    ((format t "The double of 5 is %d" (doublen 5)))) )
-"The double of 5 is 10"
 > ( (let ((fact (lambda (n)
   (if (<= n 1)
     1

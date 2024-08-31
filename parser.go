@@ -2,6 +2,13 @@ package main
 
 import (
 	"strconv"
+	"sync"
+)
+
+// a cache for parsed expressions
+var (
+	parseCache     = make(map[string]LispValue)
+	parseCacheLock sync.RWMutex
 )
 
 // Parse reads tokens and constructs a Lisp expression tree
@@ -10,15 +17,26 @@ func Parse(tokens []Token) (LispValue, []Token, error) {
 		return nil, nil, &LispError{Message: "unexpected EOF while reading", Line: 0, Column: 0}
 	}
 
+	// Check cache for parsed expression
+	cacheKey := tokensToString(tokens)
+	parseCacheLock.RLock()
+	if cachedExpr, ok := parseCache[cacheKey]; ok {
+		parseCacheLock.RUnlock()
+		return cachedExpr, nil, nil
+	}
+	parseCacheLock.RUnlock()
+
 	token := tokens[0]
 	tokens = tokens[1:]
 
+	var result LispValue
+	var err error
+
 	switch token.Type {
 	case string(OPEN_BRACKET):
-		var elements []LispValue
+		elements := make([]LispValue, 0, 8)
 		for len(tokens) > 0 && tokens[0].Type != string(CLOSE_BRACKET) {
 			var elem LispValue
-			var err error
 			elem, tokens, err = Parse(tokens)
 			if err != nil {
 				return nil, nil, err
@@ -29,20 +47,27 @@ func Parse(tokens []Token) (LispValue, []Token, error) {
 			return nil, nil, &LispError{Message: "unexpected EOF while reading", Line: token.Line, Column: token.Column}
 		}
 		tokens = tokens[1:]
-		return &LispList{Elements: elements}, tokens, nil
+		result = &LispList{Elements: elements}
 	case STRING:
-		return &LispString{Value: token.Value}, tokens, nil
+		result = &LispString{Value: token.Value}
 	case NUMBER:
 		num, _ := strconv.Atoi(token.Value)
-		return &LispNumber{Value: num}, tokens, nil
+		result = &LispNumber{Value: num}
 	case FLOAT:
 		num, _ := strconv.ParseFloat(token.Value, 64)
-		return &LispFloat{Value: num}, tokens, nil
+		result = &LispFloat{Value: num}
 	case BOOLEAN:
-		return &LispBoolean{Value: token.Value == TRUE}, tokens, nil
+		result = &LispBoolean{Value: token.Value == TRUE}
 	case NIL:
-		return &LispNil{}, tokens, nil
+		result = &LispNil{}
 	default:
-		return &LispAtom{Value: token.Value}, tokens, nil
+		result = &LispAtom{Value: token.Value}
 	}
+
+	// Cache the parsed expression
+	parseCacheLock.Lock()
+	parseCache[cacheKey] = result
+	parseCacheLock.Unlock()
+
+	return result, tokens, nil
 }
