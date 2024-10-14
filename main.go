@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime/pprof"
 	"time"
 
 	"github.com/c-bata/go-prompt"
@@ -88,36 +87,9 @@ func readFile(filepath string) (string, error) {
 	return string(data), nil
 }
 
-// start profiling
-func startProfiling(name string) *os.File {
-	f, err := os.Create(name + ".prof")
-	if err != nil {
-		fmt.Println("Could not create CPU profile: ", err)
-		return nil
-	}
-	if err := pprof.StartCPUProfile(f); err != nil {
-		fmt.Println("Could not start CPU profile: ", err)
-		f.Close()
-		return nil
-	}
-	return f
-}
-
-// stop profiling
-func stopProfiling(f *os.File) {
-	pprof.StopCPUProfile()
-	f.Close()
-}
-
 // main
 func main() {
 	env = initEnvironment()
-
-	// Start profiling
-	profileFile := startProfiling("cclisp")
-	if profileFile != nil {
-		defer stopProfiling(profileFile)
-	}
 
 	if len(os.Args) > 1 {
 		// File execution mode
@@ -155,10 +127,7 @@ func main() {
 						fmt.Println("Recovered from panic:", r)
 					}
 				}()
-				// start := time.Now()
 				executor(input)
-				// elapsed := time.Since(start)
-				// fmt.Printf("Execution time: %v\n", elapsed)
 			},
 			completer,
 			prompt.OptionPrefix("cclisp> "),
