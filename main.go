@@ -87,7 +87,6 @@ func readFile(filepath string) (string, error) {
 	return string(data), nil
 }
 
-// main
 func main() {
 	env = initEnvironment()
 
@@ -119,7 +118,7 @@ func main() {
 		}
 		fmt.Printf("Execution time: %v\n", elapsed)
 	} else {
-		// REPL mode with autocompletion and error recovery
+		// REPL mode
 		p := prompt.New(
 			func(input string) {
 				defer func() {
@@ -132,6 +131,13 @@ func main() {
 			completer,
 			prompt.OptionPrefix("cclisp> "),
 			prompt.OptionTitle("CCLisp REPL"),
+			prompt.OptionAddKeyBind(prompt.KeyBind{
+				Key: prompt.ControlC,
+				Fn: func(buf *prompt.Buffer) {
+					fmt.Println("Exiting REPL...")
+					os.Exit(0)
+				},
+			}),
 		)
 		p.Run()
 	}
