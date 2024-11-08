@@ -15,6 +15,7 @@
   (if (> 10 5) "greater" "less")
   (let ((a 10) (b 20)) (* a b))
   (cdr (list 1 2 3))
+  (car (list 1 2 3))
 )
 
 

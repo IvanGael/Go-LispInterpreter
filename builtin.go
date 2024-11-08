@@ -1,5 +1,6 @@
 package main
 
+// builtins is a map of builtin functions and their descriptions
 var builtins = map[string]string{
 	FORMAT:                "format input",
 	READ:                  "reads input from the user",

@@ -15,6 +15,7 @@ type LispAtom struct {
 	Value string
 }
 
+// String returns the string representation of the atom
 func (a *LispAtom) String() string {
 	return a.Value
 }
@@ -24,6 +25,7 @@ type LispNumber struct {
 	Value int
 }
 
+// String returns the string representation of the number
 func (n *LispNumber) String() string {
 	return strconv.Itoa(n.Value)
 }
@@ -33,6 +35,7 @@ type LispFloat struct {
 	Value float64
 }
 
+// String returns the string representation of the float
 func (f *LispFloat) String() string {
 	return strconv.FormatFloat(f.Value, 'f', -1, 64)
 }
@@ -42,6 +45,7 @@ type LispString struct {
 	Value string
 }
 
+// String returns the string representation of the string
 func (s *LispString) String() string {
 	return "\"" + s.Value + "\""
 }
@@ -51,6 +55,7 @@ type LispList struct {
 	Elements []LispValue
 }
 
+// String returns the string representation of the list
 func (l *LispList) String() string {
 	var sb strings.Builder
 	sb.WriteString(string(OPEN_BRACKET))
@@ -72,6 +77,7 @@ type LispFunction struct {
 	Env    Environment
 }
 
+// String returns the string representation of the function
 func (f *LispFunction) String() string {
 	if f.Name != nil {
 		return strings.ToUpper(f.Name.Value)
@@ -84,6 +90,7 @@ type LispBoolean struct {
 	Value bool
 }
 
+// String returns the string representation of the boolean
 func (b *LispBoolean) String() string {
 	if b.Value {
 		return TRUE
@@ -94,6 +101,7 @@ func (b *LispBoolean) String() string {
 // LispNil represents a nil/null value
 type LispNil struct{}
 
+// String returns the string representation of the nil
 func (n *LispNil) String() string {
 	return NIL
 }

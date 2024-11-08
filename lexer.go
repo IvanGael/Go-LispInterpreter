@@ -60,6 +60,7 @@ const (
 	FUNCTION              = "FUNCTION"
 )
 
+// Token represents a token
 type Token struct {
 	Type   string
 	Value  string
@@ -132,6 +133,7 @@ func Tokenize(input string) []Token {
 	return tokens
 }
 
+// createToken creates a token based on the value
 func createToken(value string, line, column int) Token {
 	tokenType := IDENTIFIER
 	switch value {
@@ -151,7 +153,7 @@ func createToken(value string, line, column int) Token {
 	return Token{Type: tokenType, Value: value, Line: line, Column: column}
 }
 
-// convert tokens to a string for caching
+// tokensToString convert tokens to a string
 func tokensToString(tokens []Token) string {
 	var sb strings.Builder
 	for _, token := range tokens {

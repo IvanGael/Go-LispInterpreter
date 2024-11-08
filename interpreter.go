@@ -18,6 +18,7 @@ type LispError struct {
 	Column  int
 }
 
+// Error returns the error message
 func (e *LispError) Error() string {
 	return fmt.Sprintf("Error at line %d, column %d: %s", e.Line, e.Column, e.Message)
 }

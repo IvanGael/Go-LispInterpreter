@@ -8,6 +8,7 @@ import (
 	"github.com/c-bata/go-prompt"
 )
 
+// evalMultipleExpressions evaluates multiple expressions and returns the results
 func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispValue, error) {
 	results := make([]LispValue, 0, len(expressions))
 	for _, expr := range expressions {
@@ -20,8 +21,10 @@ func evalMultipleExpressions(env Environment, expressions []LispValue) ([]LispVa
 	return results, nil
 }
 
+// Environment represents a symbol table
 var env Environment
 
+// completer returns suggestions for the prompt
 func completer(d prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{}
 
@@ -37,6 +40,7 @@ func completer(d prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
+// executor reads the input, tokenizes it, parses it, and evaluates it
 func executor(input string) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -69,6 +73,7 @@ func executor(input string) {
 	}
 }
 
+// initEnvironment initializes the environment with predefined symbols
 func initEnvironment() Environment {
 	env := make(Environment)
 	env[T] = &LispBoolean{Value: true}
