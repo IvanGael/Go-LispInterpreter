@@ -116,6 +116,7 @@ func main() {
 		for _, result := range results {
 			fmt.Println(result)
 		}
+		fmt.Printf("\n")
 		fmt.Printf("Execution time: %v\n", elapsed)
 	} else {
 		// REPL mode
